@@ -16,6 +16,8 @@
 #include "debugUtils.h"
 #include "localAlignmentScore.h"
 
+#define DEBUG_MATRIX 1
+
 using namespace std;
 
 // Penalty for "losing" a small contig fragment.
@@ -545,14 +547,14 @@ MatchResult *  matchLocal(const ContigMapData * pContigMapData, const OpticalMap
     // Create the scoreMatrix
     ScoreMatrix_t * pScoreMatrix = createLocalScoreMatrix(contigFrags, opticalFrags, pOpticalMapData->numFrags_, alignParams);
 
-    /*
+    #if DEBUG_MATRIX > 0 
     string debugFileName;
     if (forward)
         debugFileName = "debugMatrix_forward.txt";
     else
         debugFileName = "debugMatrix_reverse.txt";
     writeMatrixToFile(pScoreMatrix, debugFileName);
-    */
+    #endif
 
     assert (pScoreMatrix->m_ == m);
     assert (pScoreMatrix->n_ == n);

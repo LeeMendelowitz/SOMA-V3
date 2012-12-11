@@ -4,6 +4,8 @@
 // Scoring functions for local alignment
 // nContigSites: number of unaligned contig sites
 // nOpticalSites: number of unaligned optical sites
+// Returns a positive number for good alignments, a negative
+// number for bad alignments
 double localScoringFunction(int nContigSites, int nOpticalSites,
                        int contigLength, int opticalLength,
                        bool boundaryFrag)
@@ -13,8 +15,8 @@ double localScoringFunction(int nContigSites, int nOpticalSites,
     double var = contigLength*Constants::SIGMA2;
     double C = 10.0;
     double A = 0.5;
-    double sizeScore = A*((delta*delta/var) - C);
-    double missPenalty = nContigSites*2.0 + nOpticalSites*2.0;
+    double sizeScore = -A*((delta*delta/var) - C);
+    double missPenalty = -nContigSites*2.0 - nOpticalSites*2.0;
     return sizeScore + missPenalty;
 }
 

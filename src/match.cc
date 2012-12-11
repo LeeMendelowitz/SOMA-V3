@@ -218,7 +218,8 @@ int main(int argc, char ** argv)
             continue;
 
         MatchResultList resultList;
-        matchContigToOpticalMaps(pContigMapData, opticalMapDataList, &resultList, Options::localAlignment);
+        bool getOthers = true;
+        matchContigToOpticalMaps(pContigMapData, opticalMapDataList, &resultList, getOthers, Options::localAlignment);
         //cout << "Matching contig " << pContigMapData->contigId_ << ". Found " << resultList.size() << " results" << "\n";
         sort(resultList.begin(), resultList.end(), resultScoreComp);
       
@@ -526,6 +527,17 @@ void matchContigToOpticalMaps(const ContigMapData * pContigMapData, const vector
                      vector<MatchResult *> * pAllMatches, bool forward, const AlignmentParams& alignParams);
 
     MatchFunc matchFunc = localAlignment ? matchLocal : match;
+
+    if (matchFunc == matchLocal)
+        cout << "Using match local" << std::endl;
+    else if (matchFunc == match)
+    {
+        cout << "Using match" << std::endl;
+    }
+    else
+    {
+        cout << "Using unknown match function" << std::endl;
+    }
 
 
     // Align to all optical maps
