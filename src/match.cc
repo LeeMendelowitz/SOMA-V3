@@ -56,7 +56,7 @@ bool resultScoreComp(const MatchResult * r1, const MatchResult * r2) { return r1
 //              vector<MatchResult *> * const pOthers, const AlignmentParams& alignParams);
 
 void matchContigToOpticalMaps(const ContigMapData * pContigMapData, const vector<OpticalMapData *>& opticalMapDataList,
-                              vector<MatchResult *> * const pResults, bool getOthers = true);
+                              vector<MatchResult *> * const pResults, bool getOthers = true, bool localAlignment = false);
 void runPermutationTests(MatchResultMap * pMatchResultMap, const vector<OpticalMapData *> opticalMapDataList, int numTrials);
 void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<OpticalMapData *> opticalMapDataList, const vector<ContigMapData *>& contigVec, int numTrials);
 
@@ -203,6 +203,8 @@ int main(int argc, char ** argv)
     MatchResultMap  matchResultMap;
     omp_set_num_threads(Options::numThreads);
     int reportPeriod = numContigs/100;
+
+
     #pragma omp parallel for schedule(dynamic) private(i) shared(allResults, matchResultMap)
     for(int i=0; i<numContigs; i++)
     {
@@ -216,7 +218,7 @@ int main(int argc, char ** argv)
             continue;
 
         MatchResultList resultList;
-        matchContigToOpticalMaps(pContigMapData, opticalMapDataList, &resultList);
+        matchContigToOpticalMaps(pContigMapData, opticalMapDataList, &resultList, Options::localAlignment);
         //cout << "Matching contig " << pContigMapData->contigId_ << ". Found " << resultList.size() << " results" << "\n";
         sort(resultList.begin(), resultList.end(), resultScoreComp);
       
@@ -502,7 +504,7 @@ void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<Optical
 // Run the match pipeline for a single contig to all of the optical maps
 // If getAllMatches is true, add all matches to pResults. Otherwise, only add the best match to pResults.
 void matchContigToOpticalMaps(const ContigMapData * pContigMapData, const vector<OpticalMapData *>& opticalMapDataList,
-                              vector<MatchResult *> * const pResults, bool getAllMatches)
+                              vector<MatchResult *> * const pResults, bool getAllMatches, bool localAlignment)
 {
     pResults->clear();
 
@@ -520,6 +522,12 @@ void matchContigToOpticalMaps(const ContigMapData * pContigMapData, const vector
     MatchResult * pResult = 0;
     MatchResult * pRevResult = 0;
 
+    typedef MatchResult* (*MatchFunc)(const ContigMapData * pContigMapData, const OpticalMapData * pOpticalMapData,
+                     vector<MatchResult *> * pAllMatches, bool forward, const AlignmentParams& alignParams);
+
+    MatchFunc matchFunc = localAlignment ? matchLocal : match;
+
+
     // Align to all optical maps
     for (int i=0; i<numOpticalMaps; i++)
     {
@@ -536,7 +544,7 @@ void matchContigToOpticalMaps(const ContigMapData * pContigMapData, const vector
 
             // Match in the forward direction
             bool forward = true;
-            pResult = match(pContigMapData, pOpticalMapData, pAllMatches, forward, alignParams);
+            pResult = matchFunc(pContigMapData, pOpticalMapData, pAllMatches, forward, alignParams);
             if (pResult && !pAllMatches)
                 allMatches.push_back(pResult);
 
@@ -544,7 +552,7 @@ void matchContigToOpticalMaps(const ContigMapData * pContigMapData, const vector
             {
                 // Match in the reverse direction
                 forward = false;
-                pRevResult = match(pContigMapData, pOpticalMapData, pAllMatches, forward, alignParams);
+                pRevResult = matchFunc(pContigMapData, pOpticalMapData, pAllMatches, forward, alignParams);
                 if (pRevResult && !pAllMatches)
                     allMatches.push_back(pRevResult);
             }

@@ -35,18 +35,18 @@
 </MatchResult>
 <MatchResult>
 	<contig>
-		<name>contig1</name>
-		<size>457797</size>
+		<name>contig4</name>
+		<size>454075</size>
 	</contig>
 	<chromosome>100.opt</chromosome>
-	<forward>1</forward>
+	<forward>0</forward>
 	<score>0</score>
 	<pval>0</pval>
 	<chi2>0</chi2>
-	<opStartIndex>5</opStartIndex>
-	<opEndIndex>23</opEndIndex>
-	<opStartBp>108693</opStartBp>
-	<opEndBp>566490</opEndBp>
+	<opStartIndex>62</opStartIndex>
+	<opEndIndex>80</opEndIndex>
+	<opStartBp>1518936</opStartBp>
+	<opEndBp>1973011</opEndBp>
 	<totalHits>36</totalHits>
 	<totalMisses>0</totalMisses>
 	<totalMissRate>0</totalMissRate>
@@ -60,10 +60,43 @@
 	<opticalMisses>0</opticalMisses>
 	<opticalMissRate>0</opticalMissRate>
 	<alignedLengthRatio>1</alignedLengthRatio>
-	<opticalMatchString> 44419,1000 ;  21971,1000 ;  45672,1000 ;  41984,1000 ;  3106,155 ;  42468,1000 ;  9755,488 ;  12981,649 ;  28725,1000 ;  26023,1000 ;  6305,315 ;  4424,221 ;  47992,1000 ;  47751,1000 ;  2915,146 ;  18906,945 ;  14653,733 ;  33363,1000 ;  6961,348 </opticalMatchString>
-	<opticalAlignedIndex>5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23</opticalAlignedIndex>
-	<contigMatchString> 42377, ;  21971, ;  45672, ;  41984, ;  3106, ;  42468, ;  9755, ;  12981, ;  28725, ;  26023, ;  6305, ;  4424, ;  47992, ;  47751, ;  2915, ;  18906, ;  14653, ;  33363, ;  6426, </contigMatchString>
+	<opticalMatchString> 3364,168 ;  19103,955 ;  11290,565 ;  11992,600 ;  22453,1000 ;  43421,1000 ;  48153,1000 ;  35036,1000 ;  24661,1000 ;  23166,1000 ;  24870,1000 ;  29645,1000 ;  32374,1000 ;  43857,1000 ;  17256,863 ;  10397,520 ;  10711,536 ;  23412,1000 ;  45580,1000 </opticalMatchString>
+	<opticalAlignedIndex>62;63;64;65;66;67;68;69;70;71;72;73;74;75;76;77;78;79;80</opticalAlignedIndex>
+	<contigMatchString> 2583, ;  19103, ;  11290, ;  11992, ;  22453, ;  43421, ;  48153, ;  35036, ;  24661, ;  23166, ;  24870, ;  29645, ;  32374, ;  43857, ;  17256, ;  10397, ;  10711, ;  23412, ;  19695, </contigMatchString>
 	<contigAlignedIndex>0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18</contigAlignedIndex>
+	<contigLostIndex></contigLostIndex>
+</MatchResult>
+<MatchResult>
+	<contig>
+		<name>contig9</name>
+		<size>487396</size>
+	</contig>
+	<chromosome>100.opt</chromosome>
+	<forward>1</forward>
+	<score>0</score>
+	<pval>0</pval>
+	<chi2>0</chi2>
+	<opStartIndex>37</opStartIndex>
+	<opEndIndex>54</opEndIndex>
+	<opStartBp>894947</opStartBp>
+	<opEndBp>1382343</opEndBp>
+	<totalHits>34</totalHits>
+	<totalMisses>0</totalMisses>
+	<totalMissRate>0</totalMissRate>
+	<contigHits>17</contigHits>
+	<contigMisses>0</contigMisses>
+	<contigMissRate>0</contigMissRate>
+	<contigUnalignedBases>0</contigUnalignedBases>
+	<contigUnalignedBaseRatio>0</contigUnalignedBaseRatio>
+	<contigUnalignedFrags>0</contigUnalignedFrags>
+	<opticalHits>17</opticalHits>
+	<opticalMisses>0</opticalMisses>
+	<opticalMissRate>0</opticalMissRate>
+	<alignedLengthRatio>1</alignedLengthRatio>
+	<opticalMatchString> 22170,1000 ;  48059,1000 ;  27421,1000 ;  18545,927 ;  46921,1000 ;  44818,1000 ;  41255,1000 ;  25728,1000 ;  32452,1000 ;  3268,163 ;  23997,1000 ;  37074,1000 ;  6369,318 ;  7351,368 ;  21545,1000 ;  47188,1000 ;  33453,1000 ;  41872,1000 </opticalMatchString>
+	<opticalAlignedIndex>37;38;39;40;41;42;43;44;45;46;47;48;49;50;51;52;53;54</opticalAlignedIndex>
+	<contigMatchString> 10792, ;  48059, ;  27421, ;  18545, ;  46921, ;  44818, ;  41255, ;  25728, ;  32452, ;  3268, ;  23997, ;  37074, ;  6369, ;  7351, ;  21545, ;  47188, ;  33453, ;  11160, </contigMatchString>
+	<contigAlignedIndex>0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17</contigAlignedIndex>
 	<contigLostIndex></contigLostIndex>
 </MatchResult>
 <MatchResult>
@@ -101,35 +134,35 @@
 </MatchResult>
 <MatchResult>
 	<contig>
-		<name>contig9</name>
-		<size>487396</size>
+		<name>contig1</name>
+		<size>457797</size>
 	</contig>
 	<chromosome>100.opt</chromosome>
 	<forward>1</forward>
 	<score>0</score>
 	<pval>0</pval>
 	<chi2>0</chi2>
-	<opStartIndex>37</opStartIndex>
-	<opEndIndex>54</opEndIndex>
-	<opStartBp>894947</opStartBp>
-	<opEndBp>1382343</opEndBp>
-	<totalHits>34</totalHits>
+	<opStartIndex>5</opStartIndex>
+	<opEndIndex>23</opEndIndex>
+	<opStartBp>108693</opStartBp>
+	<opEndBp>566490</opEndBp>
+	<totalHits>36</totalHits>
 	<totalMisses>0</totalMisses>
 	<totalMissRate>0</totalMissRate>
-	<contigHits>17</contigHits>
+	<contigHits>18</contigHits>
 	<contigMisses>0</contigMisses>
 	<contigMissRate>0</contigMissRate>
 	<contigUnalignedBases>0</contigUnalignedBases>
 	<contigUnalignedBaseRatio>0</contigUnalignedBaseRatio>
 	<contigUnalignedFrags>0</contigUnalignedFrags>
-	<opticalHits>17</opticalHits>
+	<opticalHits>18</opticalHits>
 	<opticalMisses>0</opticalMisses>
 	<opticalMissRate>0</opticalMissRate>
 	<alignedLengthRatio>1</alignedLengthRatio>
-	<opticalMatchString> 22170,1000 ;  48059,1000 ;  27421,1000 ;  18545,927 ;  46921,1000 ;  44818,1000 ;  41255,1000 ;  25728,1000 ;  32452,1000 ;  3268,163 ;  23997,1000 ;  37074,1000 ;  6369,318 ;  7351,368 ;  21545,1000 ;  47188,1000 ;  33453,1000 ;  41872,1000 </opticalMatchString>
-	<opticalAlignedIndex>37;38;39;40;41;42;43;44;45;46;47;48;49;50;51;52;53;54</opticalAlignedIndex>
-	<contigMatchString> 10792, ;  48059, ;  27421, ;  18545, ;  46921, ;  44818, ;  41255, ;  25728, ;  32452, ;  3268, ;  23997, ;  37074, ;  6369, ;  7351, ;  21545, ;  47188, ;  33453, ;  11160, </contigMatchString>
-	<contigAlignedIndex>0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17</contigAlignedIndex>
+	<opticalMatchString> 44419,1000 ;  21971,1000 ;  45672,1000 ;  41984,1000 ;  3106,155 ;  42468,1000 ;  9755,488 ;  12981,649 ;  28725,1000 ;  26023,1000 ;  6305,315 ;  4424,221 ;  47992,1000 ;  47751,1000 ;  2915,146 ;  18906,945 ;  14653,733 ;  33363,1000 ;  6961,348 </opticalMatchString>
+	<opticalAlignedIndex>5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23</opticalAlignedIndex>
+	<contigMatchString> 42377, ;  21971, ;  45672, ;  41984, ;  3106, ;  42468, ;  9755, ;  12981, ;  28725, ;  26023, ;  6305, ;  4424, ;  47992, ;  47751, ;  2915, ;  18906, ;  14653, ;  33363, ;  6426, </contigMatchString>
+	<contigAlignedIndex>0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18</contigAlignedIndex>
 	<contigLostIndex></contigLostIndex>
 </MatchResult>
 <MatchResult>
@@ -233,72 +266,6 @@
 </MatchResult>
 <MatchResult>
 	<contig>
-		<name>contig7</name>
-		<size>133830</size>
-	</contig>
-	<chromosome>100.opt</chromosome>
-	<forward>0</forward>
-	<score>0</score>
-	<pval>0</pval>
-	<chi2>0</chi2>
-	<opStartIndex>69</opStartIndex>
-	<opEndIndex>74</opEndIndex>
-	<opStartBp>1686887</opStartBp>
-	<opEndBp>1820717</opEndBp>
-	<totalHits>10</totalHits>
-	<totalMisses>0</totalMisses>
-	<totalMissRate>0</totalMissRate>
-	<contigHits>5</contigHits>
-	<contigMisses>0</contigMisses>
-	<contigMissRate>0</contigMissRate>
-	<contigUnalignedBases>0</contigUnalignedBases>
-	<contigUnalignedBaseRatio>0</contigUnalignedBaseRatio>
-	<contigUnalignedFrags>0</contigUnalignedFrags>
-	<opticalHits>5</opticalHits>
-	<opticalMisses>0</opticalMisses>
-	<opticalMissRate>0</opticalMissRate>
-	<alignedLengthRatio>1</alignedLengthRatio>
-	<opticalMatchString> 35036,1000 ;  24661,1000 ;  23166,1000 ;  24870,1000 ;  29645,1000 ;  32374,1000 </opticalMatchString>
-	<opticalAlignedIndex>69;70;71;72;73;74</opticalAlignedIndex>
-	<contigMatchString> 26080, ;  24661, ;  23166, ;  24870, ;  29645, ;  5408, </contigMatchString>
-	<contigAlignedIndex>0;1;2;3;4;5</contigAlignedIndex>
-	<contigLostIndex></contigLostIndex>
-</MatchResult>
-<MatchResult>
-	<contig>
-		<name>contig7</name>
-		<size>133830</size>
-	</contig>
-	<chromosome>100.opt</chromosome>
-	<forward>1</forward>
-	<score>-3.03536</score>
-	<pval>0.01</pval>
-	<chi2>0.0352763</chi2>
-	<opStartIndex>69</opStartIndex>
-	<opEndIndex>73</opEndIndex>
-	<opStartBp>1677914</opStartBp>
-	<opEndBp>1811744</opEndBp>
-	<totalHits>8</totalHits>
-	<totalMisses>1</totalMisses>
-	<totalMissRate>0.111111</totalMissRate>
-	<contigHits>4</contigHits>
-	<contigMisses>1</contigMisses>
-	<contigMissRate>0.2</contigMissRate>
-	<contigUnalignedBases>0</contigUnalignedBases>
-	<contigUnalignedBaseRatio>0</contigUnalignedBaseRatio>
-	<contigUnalignedFrags>0</contigUnalignedFrags>
-	<opticalHits>4</opticalHits>
-	<opticalMisses>0</opticalMisses>
-	<opticalMissRate>0</opticalMissRate>
-	<alignedLengthRatio>1</alignedLengthRatio>
-	<opticalMatchString> 35036,1000 ;  24661,1000 ;  23166,1000 ;  24870,1000 ;  29645,1000 </opticalMatchString>
-	<opticalAlignedIndex>69;70;71;72;73</opticalAlignedIndex>
-	<contigMatchString> 5408,  29645, ;  24870, ;  23166, ;  24661, ;  26080, </contigMatchString>
-	<contigAlignedIndex>0,1;2;3;4;5</contigAlignedIndex>
-	<contigLostIndex></contigLostIndex>
-</MatchResult>
-<MatchResult>
-	<contig>
 		<name>contig16</name>
 		<size>30656</size>
 	</contig>
@@ -398,35 +365,68 @@
 </MatchResult>
 <MatchResult>
 	<contig>
-		<name>contig4</name>
-		<size>454075</size>
+		<name>contig7</name>
+		<size>133830</size>
 	</contig>
 	<chromosome>100.opt</chromosome>
 	<forward>0</forward>
 	<score>0</score>
 	<pval>0</pval>
 	<chi2>0</chi2>
-	<opStartIndex>62</opStartIndex>
-	<opEndIndex>80</opEndIndex>
-	<opStartBp>1518936</opStartBp>
-	<opEndBp>1973011</opEndBp>
-	<totalHits>36</totalHits>
+	<opStartIndex>69</opStartIndex>
+	<opEndIndex>74</opEndIndex>
+	<opStartBp>1686887</opStartBp>
+	<opEndBp>1820717</opEndBp>
+	<totalHits>10</totalHits>
 	<totalMisses>0</totalMisses>
 	<totalMissRate>0</totalMissRate>
-	<contigHits>18</contigHits>
+	<contigHits>5</contigHits>
 	<contigMisses>0</contigMisses>
 	<contigMissRate>0</contigMissRate>
 	<contigUnalignedBases>0</contigUnalignedBases>
 	<contigUnalignedBaseRatio>0</contigUnalignedBaseRatio>
 	<contigUnalignedFrags>0</contigUnalignedFrags>
-	<opticalHits>18</opticalHits>
+	<opticalHits>5</opticalHits>
 	<opticalMisses>0</opticalMisses>
 	<opticalMissRate>0</opticalMissRate>
 	<alignedLengthRatio>1</alignedLengthRatio>
-	<opticalMatchString> 3364,168 ;  19103,955 ;  11290,565 ;  11992,600 ;  22453,1000 ;  43421,1000 ;  48153,1000 ;  35036,1000 ;  24661,1000 ;  23166,1000 ;  24870,1000 ;  29645,1000 ;  32374,1000 ;  43857,1000 ;  17256,863 ;  10397,520 ;  10711,536 ;  23412,1000 ;  45580,1000 </opticalMatchString>
-	<opticalAlignedIndex>62;63;64;65;66;67;68;69;70;71;72;73;74;75;76;77;78;79;80</opticalAlignedIndex>
-	<contigMatchString> 2583, ;  19103, ;  11290, ;  11992, ;  22453, ;  43421, ;  48153, ;  35036, ;  24661, ;  23166, ;  24870, ;  29645, ;  32374, ;  43857, ;  17256, ;  10397, ;  10711, ;  23412, ;  19695, </contigMatchString>
-	<contigAlignedIndex>0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18</contigAlignedIndex>
+	<opticalMatchString> 35036,1000 ;  24661,1000 ;  23166,1000 ;  24870,1000 ;  29645,1000 ;  32374,1000 </opticalMatchString>
+	<opticalAlignedIndex>69;70;71;72;73;74</opticalAlignedIndex>
+	<contigMatchString> 26080, ;  24661, ;  23166, ;  24870, ;  29645, ;  5408, </contigMatchString>
+	<contigAlignedIndex>0;1;2;3;4;5</contigAlignedIndex>
+	<contigLostIndex></contigLostIndex>
+</MatchResult>
+<MatchResult>
+	<contig>
+		<name>contig7</name>
+		<size>133830</size>
+	</contig>
+	<chromosome>100.opt</chromosome>
+	<forward>1</forward>
+	<score>-3.03536</score>
+	<pval>0.01</pval>
+	<chi2>0.0352763</chi2>
+	<opStartIndex>69</opStartIndex>
+	<opEndIndex>73</opEndIndex>
+	<opStartBp>1677914</opStartBp>
+	<opEndBp>1811744</opEndBp>
+	<totalHits>8</totalHits>
+	<totalMisses>1</totalMisses>
+	<totalMissRate>0.111111</totalMissRate>
+	<contigHits>4</contigHits>
+	<contigMisses>1</contigMisses>
+	<contigMissRate>0.2</contigMissRate>
+	<contigUnalignedBases>0</contigUnalignedBases>
+	<contigUnalignedBaseRatio>0</contigUnalignedBaseRatio>
+	<contigUnalignedFrags>0</contigUnalignedFrags>
+	<opticalHits>4</opticalHits>
+	<opticalMisses>0</opticalMisses>
+	<opticalMissRate>0</opticalMissRate>
+	<alignedLengthRatio>1</alignedLengthRatio>
+	<opticalMatchString> 35036,1000 ;  24661,1000 ;  23166,1000 ;  24870,1000 ;  29645,1000 </opticalMatchString>
+	<opticalAlignedIndex>69;70;71;72;73</opticalAlignedIndex>
+	<contigMatchString> 5408,  29645, ;  24870, ;  23166, ;  24661, ;  26080, </contigMatchString>
+	<contigAlignedIndex>0,1;2;3;4;5</contigAlignedIndex>
 	<contigLostIndex></contigLostIndex>
 </MatchResult>
 </alignments>

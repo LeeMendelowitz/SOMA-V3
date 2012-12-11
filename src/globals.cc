@@ -44,6 +44,7 @@ namespace Options
     int delta = 5;
     int smallFrag = 2000; // Cutoff of small fragments (bp)
     double smallFragSlope = C_r_contig/smallFrag;
+    bool localAlignment = false;
 }
 
 namespace Globals

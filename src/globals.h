@@ -45,6 +45,7 @@ namespace Options
     extern int delta; // maximum number of unaligned sites in interior of alignment block
     extern int smallFrag; // Cutoff of small fragments (bp)
     extern double smallFragSlope;
+    extern bool localAlignment;
 }
 
 namespace Globals

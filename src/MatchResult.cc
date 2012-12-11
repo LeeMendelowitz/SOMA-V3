@@ -57,7 +57,8 @@ void MatchResult::computeAlignment(const Index_t& end_index, const ScoreMatrix_t
     reverse(trail.begin(), trail.end());
     const vector<Index_t>::iterator tb = trail.begin();
     const vector<Index_t>::iterator te = trail.end();
-    assert(tb->first == 0); // Trail should start in first row, since we are aligning entire contig.
+    // Note: Th
+    //assert(tb->first == 0); // Trail should start in first row, since we are aligning entire contig.
     opStartIndex_ = tb->second; // index of first aligned fragment in optical map
     opEndIndex_ = end_index.second-1; // index of last aligned fragment in optical map (inclusive)
     assert (opStartIndex_ >= 0);

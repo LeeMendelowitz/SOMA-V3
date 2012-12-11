@@ -12,7 +12,7 @@ namespace Parser {
 error_t parse_opt(int key, char *arg, struct argp_state *state);
 
 // Options for argp parser
-const char * argp_program_version = "SOMA 1.0";
+const char * argp_program_version = "SOMA 3.0";
 const char * argp_program_bug_address = "<LMendelo@umiacs.umd.edu>";
 const char *  doc = "Contig Optical Map Alignment Tool: Align contigs to optical map";
 const char * args_doc = "ContigMapFile OpticalMapFile1 [OpticalMapFile 2....]";
@@ -27,6 +27,7 @@ typedef struct argp_option argpOption;
 argpOption options[] = {
 	{"output", 0, "prefix", 0, "prefix for output files. Default: 'output'",0},
     {"circular", 0, 0, 0, "chromosome is circular. Default is non-circular.",0},
+    {"local", 0, 0, 0, "Perform local alignment. Default is global.", 0},
 //    {"allowFalseCuts", 0, 0, 0, "Allow false cuts in optical map",0},
     {"noReverse", 0, 0, 0, "Do not match reverse of contig to optical map",0},
     {"oneToOneMatch", 0, 0, 0, "Match the entire contig to the entire optical map",0},
@@ -115,6 +116,7 @@ void ArgParser::printArgs()
               << "OpticalMaps: " << opMapString << "\n"
               << "SilicoMap: " << Options::silicoMap << "\n"
               << "Circular: " << Options::circular << "\n"
+              << "LocalAlignment: " << Options::localAlignment << "\n"
  //             << "AllowFalseCuts: " << Options::allowFalseCuts << "\n"
 //              << "matchFragmentOnce: " << Options::matchFragmentOnce << "\n"
               << "noReverse: " << Options::noReverse << "\n"
@@ -143,6 +145,8 @@ error_t parse_opt(int key, char *arg, struct argp_state *state)
     int arg_num = state->arg_num;
     if (key == ap->getKey("circular") ){
         Options::circular = true;
+    } else if (key == ap->getKey("local")) {
+        Options::localAlignment = true;
     //} else if (key == ap->getKey("allowFalseCuts") ) {
      //   Options::allowFalseCuts = true;
     //} else if (key == ap->getKey("allowGaps") ) {
