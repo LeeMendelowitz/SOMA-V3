@@ -76,6 +76,10 @@ void XMLWriter::writeAlignment(const MatchResult& mr)
     matchResultNode.append_child("score").append_child(node_pcdata).set_value(toCStr(mr.score_));
     matchResultNode.append_child("pval").append_child(node_pcdata).set_value(toCStr(mr.pval_));
     matchResultNode.append_child("chi2").append_child(node_pcdata).set_value(toCStr(mr.chi2_));
+    matchResultNode.append_child("cStartIndex").append_child(node_pcdata).set_value(toCStr(mr.cStartIndex_));
+    matchResultNode.append_child("cEndIndex").append_child(node_pcdata).set_value(toCStr(mr.cEndIndex_));
+    matchResultNode.append_child("cStartBp").append_child(node_pcdata).set_value(toCStr(mr.cStartBp_));
+    matchResultNode.append_child("cEndBp").append_child(node_pcdata).set_value(toCStr(mr.cEndBp_));
     matchResultNode.append_child("opStartIndex").append_child(node_pcdata).set_value(toCStr(mr.opStartIndex_));
     matchResultNode.append_child("opEndIndex").append_child(node_pcdata).set_value(toCStr(mr.opEndIndex_));
     matchResultNode.append_child("opStartBp").append_child(node_pcdata).set_value(toCStr(mr.opStartBp_));

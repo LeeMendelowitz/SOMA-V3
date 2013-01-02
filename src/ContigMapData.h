@@ -27,10 +27,17 @@ class ContigMapData
     void getReverseFrags(vector<FragData>& frags) const { frags = reverseFrags_;}
     void setFrags(const vector<FragData>& frags);
 
+    // Get the starting and ending location of a restriction fragment
+    int getStartBp(int ind, bool forward=true) const;
+    int getEndBp(int ind, bool forward=true) const;
+
     private:
+    vector<int> fragStartBp_;
+    vector<int> fragEndBp_;
 
     // Filter out any silico fragments of zero size
     void computeFragsFromSites(const vector<SiteData>& sites);
+    void calcFragStartEnd();
 };
 
 void reverseContigFragDataVec(const vector<FragData>& orig, vector<FragData>& reversed);

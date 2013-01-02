@@ -50,10 +50,10 @@ class MatchedFrag
 
         // Data
         bool contigGap_;
-        int opStart_; // optical start index
+        int opStart_; // optical start index (zero based, inclusive)
         int opEnd_; // optical end index (exclusive)
         int opLength_; // optical fragment length (bp)
-        int cStart_; // contig start index
+        int cStart_; // contig start index (zero based, inclusive)
         int cEnd_; // contig end index (exclusive)
         int cLength_; // contig fragment length (bp)
         int opMisses_; // number of unaligned optical sites within the block
@@ -128,6 +128,10 @@ class MatchResult {
     int opEndIndex_; // index of last aligned fragment from optical map (inclusive)
     int opStartBp_; //bp position of the start of the match, relative to the beginning of the entire optical map
     int opEndBp_; // bp position of the end of the match, relative to the end of the entire optical map
+    int cStartIndex_;
+    int cEndIndex_;
+    int cStartBp_;
+    int cEndBp_;
     bool forward_; // contig oriented forward or backward
     vector<MatchedFrag> matchedFragList_;
 

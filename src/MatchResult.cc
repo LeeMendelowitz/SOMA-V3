@@ -5,6 +5,10 @@
 #include "ContigMapData.h"
 #include "OpticalMapData.h"
 
+#include <iostream>
+
+#define DEBUG 1
+
 // This is the constructor for MatchResult
 // The MatchResult data is determined from the scoreMatrix and the end_index
 // and walking backwards through the scoreMatrix.
@@ -54,13 +58,21 @@ void MatchResult::computeAlignment(const Index_t& end_index, const ScoreMatrix_t
         else
             break;
     }
+
+    #if DEBUG > 0
+    std::cout << "Trail size: " << trail.size() << std::endl;
+    #endif
+
     reverse(trail.begin(), trail.end());
     const vector<Index_t>::iterator tb = trail.begin();
     const vector<Index_t>::iterator te = trail.end();
-    // Note: Th
-    //assert(tb->first == 0); // Trail should start in first row, since we are aligning entire contig.
+    cStartIndex_ = tb->first;
     opStartIndex_ = tb->second; // index of first aligned fragment in optical map
-    opEndIndex_ = end_index.second-1; // index of last aligned fragment in optical map (inclusive)
+    // Subtract 1 from the end_index of the dynamic programming score matrix
+    // because the dynamic programming score matrix has an inserted first row/column.
+    cEndIndex_ = end_index.first-1;
+    opEndIndex_ = end_index.second-1;
+
     assert (opStartIndex_ >= 0);
     assert (opEndIndex_ >= 0);
 
@@ -70,7 +82,7 @@ void MatchResult::computeAlignment(const Index_t& end_index, const ScoreMatrix_t
     int pc, po; // Contig and optical end index (exclusive) of predecessor matched fragment
     int os, oe, cs, ce; // optical and contig start index (inclusive and end index (exclusive) for matched fragment
     MatchedFrag block;
-    pc = 0;
+    pc = cStartIndex_;
     po = opStartIndex_;
     for(ti = tb+1; ti != te; ti++)
     {
@@ -90,6 +102,8 @@ void MatchResult::computeAlignment(const Index_t& end_index, const ScoreMatrix_t
     // This value is refined in buildAlignmentAttributes
     opStartBp_ = pOpticalMapData->getEndBp(opStartIndex_);
     opEndBp_ = pOpticalMapData->getStartBp(opEndIndex_);
+    cStartBp_ = pContigMapData->getStartBp(cStartIndex_, forward_);
+    cEndBp_ = pContigMapData->getEndBp(cEndIndex_, forward_);
 }
 
 ostream& operator<<(ostream& os, const MatchResult& mr)

@@ -17,6 +17,7 @@
 #include "localAlignmentScore.h"
 
 #define DEBUG_MATRIX 1
+#define DEBUG_MATCH_LOCAL 1
 
 using namespace std;
 
@@ -351,7 +352,7 @@ ScoreMatrix_t * createLocalScoreMatrix(const vector<FragData>& contigFrags, cons
     const int n = opticalFrags.size()+1; // number of columns
     ScoreMatrix_t * pScoreMatrix = new ScoreMatrix_t(m ,n);
 
-    // Initialize first row
+    // Initialize Matrix
     ScoreElement_t d(0.0, -1, -1);
     for (int i = 0; i < m; i++)
         for (int j = 0; j < n; j++)
@@ -386,6 +387,7 @@ ScoreMatrix_t * createLocalScoreMatrix(const vector<FragData>& contigFrags, cons
                 {
                     oFragLength += opticalFrags[l].size_;
                     boundaryFrag = (k==0) || (i==m-1);
+                    if (boundaryFrag) continue;
                     pPrev = &pScoreMatrix->d_[k*n+l];
                     nSitesContig = i-k-1;
                     nSitesOptical = j-l-1; 
@@ -574,12 +576,24 @@ MatchResult *  matchLocal(const ContigMapData * pContigMapData, const OpticalMap
         }
     }
 
+    #if DEBUG_MATCH_LOCAL > 0
+    std::cout << "Contig: " << pContigMapData->contigId_ << " FoundMatch: " << foundMatch << std::endl;
+    #endif
+
     // Create a MatchResult for the best scoring alignment, and make sure the alignment is valid.
     if (foundMatch)
     {
         bestMatch = new MatchResult(best_index, pScoreMatrix, pContigMapData, pOpticalMapData, forward);
         assert(bestMatch!=0);
         bestMatch->buildAlignmentAttributes();
+        #if DEBUG_MATCH_LOCAL > 0
+        std::cout << "Contig: " << pContigMapData->contigId_
+                  << " FoundMatch: " << foundMatch
+                  << " cStart: " << bestMatch->cStartIndex_
+                  << " cEnd: " << bestMatch->cEndIndex_
+                  << " Hits: " << bestMatch->contigHits_
+                  << std::endl;
+        #endif
         if (bestMatch->contigHits_ <= 0)
         {
             // The best scoring match is not valid, since all contigs fragments

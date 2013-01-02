@@ -14,6 +14,7 @@ ContigMapData::ContigMapData(int length, const string& contigId, const vector<Si
     length_(length), contigId_(contigId)
 {
     computeFragsFromSites(sites);
+    calcFragStartEnd();
 }
 
 void ContigMapData::setFrags(const vector<FragData>& frags)
@@ -21,6 +22,7 @@ void ContigMapData::setFrags(const vector<FragData>& frags)
     frags_ = frags;
     reverseContigFragDataVec(frags_, reverseFrags_);
     numFrags_ = frags.size();
+    calcFragStartEnd();
 }
 
 void ContigMapData::computeFragsFromSites(const vector<SiteData>& sites)
@@ -66,4 +68,48 @@ void reverseContigFragDataVec(const vector<FragData>& orig, vector<FragData>& re
 {
     reversed = orig;
     reverse(reversed.begin(), reversed.end());
+}
+
+// Calculate the starting and ending position of each restriction fragment (in bp)
+// within the contig
+void ContigMapData::calcFragStartEnd()
+{
+    fragStartBp_ = vector<int>(frags_.size(), 0);
+    fragEndBp_ = vector<int>(frags_.size(), 0);
+    int curPos = 0;
+    // Set the start for the first fragment
+    fragStartBp_[0] = 0;
+    for(int i = 1; i < frags_.size()-1; i++)
+    {
+        curPos += frags_[i-1].size_;
+        fragEndBp_[i-1] = curPos;
+        fragStartBp_[i] = curPos;
+    }
+    // Set the end for the last fragment
+    curPos += frags_[frags_.size()-1].size_;
+    fragEndBp_[frags_.size()-1] = curPos;
+}
+
+int ContigMapData::getStartBp(int ind, bool forward) const
+{
+    if (forward)
+    {
+        return fragStartBp_[ind];
+    }
+    else
+    {
+        return fragEndBp_[frags_.size() - 1 - ind];
+    }
+}
+
+int ContigMapData::getEndBp(int ind, bool forward) const
+{
+    if (forward)
+    {
+        return fragEndBp_[ind];
+    }
+    else
+    {
+        return fragStartBp_[frags_.size() - 1 - ind];
+    }
 }
