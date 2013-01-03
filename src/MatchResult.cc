@@ -30,6 +30,9 @@ MatchResult::MatchResult(const Index_t& end_index, const ScoreMatrix_t * pScoreM
 }
 
 // Build the matchedChunkList_  from a trail through the dynamic programming score table.
+// NOTE: Instead of calling computeAlignment, a MatchResult could easily be handed a trail of MatchedChunks
+// and the MatchResultAlignment could be computed from this. This would allow for much more flexible
+// construction of MatchResults from the dynamic programming table, if needed.
 void MatchResult::computeAlignment(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix,
                           const ContigMapData * pContigMapData,
                           const OpticalMapData * pOpticalMapData)
@@ -132,18 +135,8 @@ void MatchResult::computeAlignment(const Index_t& end_index, const ScoreMatrix_t
     assert(boundaryCount <= 2);
     //#endif
     ////////////////////////////////////////////////////////
-
-    // Record the starting and ending position in the Optical Map.
-    // This value is refined in buildAlignmentAttributes
-    opStartBp_ = pOpticalMapData->getEndBp(opStartIndex_);
-    opEndBp_ = pOpticalMapData->getStartBp(opEndIndex_);
-    cStartBp_ = pContigMapData->getStartBp(cStartIndex_, forward_);
-    cEndBp_ = pContigMapData->getEndBp(cEndIndex_, forward_);
-    assert(opStartBp_ >= 0);
-    assert(opEndBp_ >= 0);
-    assert(cStartBp_ >= 0);
-    assert(cEndBp_ >= 0);
 }
+
 
 ostream& operator<<(ostream& os, const MatchResult& mr)
 {
@@ -159,10 +152,19 @@ void MatchResult::buildAlignmentAttributes()
     if (builtAlignmentAttributes_)
         return;
 
-    bool lastAlignment, firstAlignment;
+
+    if (matchedChunkList_.empty()) return;
+
+    // Assign the starting and ending bp locations.
+    const MatchedChunk& firstChunk = matchedChunkList_.front();
+    opStartBp_ = firstChunk.opStartBp_;
+    cStartBp_ = firstChunk.cStartBp_;
+
+    const MatchedChunk& lastChunk = matchedChunkList_.back();
+    opEndBp_ = lastChunk.opEndBp_;
+    cEndBp_ = lastChunk.cEndBp_;
+
     vector<FragData>::iterator pFrag;
-    int  cLeftOverhang=0; // contig size of first aligned chunk
-    int  cRightOverhang=0; // contig size of last aligned chunk
 
     // Loop over the vector of matched fragment chunks and
     // compute alignment statistics and descriptive strings.
@@ -171,8 +173,7 @@ void MatchResult::buildAlignmentAttributes()
     const ChunkIter me = matchedChunkList_.end();
     for (ChunkIter mi = mb; mi != me; mi++)
     {
-        firstAlignment = (mi == mb);
-        lastAlignment = (mi == me-1);
+        bool firstAlignment = (mi == mb);
 
         contigSize_ += mi->cLength_;
 
@@ -180,46 +181,35 @@ void MatchResult::buildAlignmentAttributes()
         {
             contigUnalignedFrags_++;
             contigUnalignedBases_ += mi->cLength_;
+            continue;
         } 
-        else
+
+        opticalMisses_ += mi->opMisses_;
+        contigMisses_ += mi->cMisses_;
+        opticalTotalAlignedBases_ += mi->opLength_;
+        contigTotalAlignedBases_ += mi->cLength_;
+        if (!mi->boundaryChunk_)
         {
+            // Model assumes that Optical Frag ~ N(C, SIGMA^2*C) where C is contig frag size
+            double var = Constants::SIGMA2 * mi->cLength_;
+            double d = mi->opLength_ - mi->cLength_;
+            chi2_ += d*d/var;
+            contigInnerAlignedBases_ += mi->cLength_;
+            opticalInnerAlignedBases_ += mi->opLength_;
+            numAlignedInnerBlocks_++;
+        }
 
-            opticalMisses_ += mi->opMisses_;
-            contigMisses_ += mi->cMisses_;
-            opticalTotalAlignedBases_ += mi->opLength_;
-            contigTotalAlignedBases_ += mi->cLength_;
-            if (!mi->boundaryChunk_)
-            {
-                // Model assumes that Optical Frag ~ N(C, SIGMA^2*C) where C is contig frag size
-                double var = Constants::SIGMA2 * mi->cLength_;
-                double d = mi->opLength_ - mi->cLength_;
-                chi2_ += d*d/var;
-                contigInnerAlignedBases_ += mi->cLength_;
-                opticalInnerAlignedBases_ += mi->opLength_;
-                numAlignedInnerBlocks_++;
-            }
-
-            if (firstAlignment && mi->boundaryChunk_)
-            {
-                cLeftOverhang = mi->cLength_; 
-            }
-            else if (firstAlignment)
-            {
-                // The first alignment is not a boundary chunk.
-                // Therefore, it is bounded by two restriction sites.
-                // Add the contribution of the left matched sites to the hit count
-                contigHits_ += 1;
-                opticalHits_ += 1;
-            }
-
-            if (lastAlignment && mi->boundaryChunk_)
-            {
-                cRightOverhang = mi->cLength_;
-            }
-
+        if (firstAlignment && !mi->boundaryChunk_)
+        {
+            // The first alignment is not a boundary chunk.
+            // Therefore, it is bounded by two restriction sites.
+            // Add the contribution of the left matched sites to the hit count
             contigHits_ += 1;
             opticalHits_ += 1;
         }
+
+        contigHits_ += 1;
+        opticalHits_ += 1;
     }
     
     totalHits_ = contigHits_ + opticalHits_;
@@ -230,13 +220,6 @@ void MatchResult::buildAlignmentAttributes()
     alignedLengthRatio_ = 1.0*min(contigInnerAlignedBases_, opticalInnerAlignedBases_) /
                               max(contigInnerAlignedBases_, opticalInnerAlignedBases_);
     contigUnalignedBaseRatio_ = 1.0*contigUnalignedBases_/contigSize_;
-
-    // Calculating the contig length before the first matched restriction site
-    // and after the last matched restriction site.
-    // Then calculate the approximate starting and ending bp position of the alignment.
-    // from the beginning of the optical map
-    opStartBp_ = opStartBp_-cLeftOverhang;
-    opEndBp_ = opEndBp_+cRightOverhang;
 
     builtAlignmentAttributes_ = true;
 }

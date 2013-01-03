@@ -43,7 +43,7 @@ class ScoreMatrix_t
         m_(m),
         n_(n)
     {
-        int numBytes = m*n*sizeof(ScoreElement_t);
+        size_t numBytes = m*n*sizeof(ScoreElement_t);
         d_ = (ScoreElement_t * ) malloc (numBytes); 
         if (d_ == 0)
         {
