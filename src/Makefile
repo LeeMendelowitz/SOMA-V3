@@ -1,4 +1,5 @@
 $(CXX)=g++
+CXXFLAGS=-Wall
 
 debug: CXX += -DDEBUG -g
 debug: debug_executable
@@ -13,10 +14,10 @@ install:
 	g++ -O0 -g $@.cc -o ../bin/$@
 
 executable: match.cc globals.cc dp.cc utils.cc ContigMapData.cc MatchResult.cc OpticalMapData.cc
-	$(CXX) -fopenmp globals.cc dp.cc match.cc utils.cc MatchResult.cc ContigMapData.cc OpticalMapData.cc pugixml/pugixml.cpp -o ../bin/match
+	$(CXX) $(CXXFLAGS) -fopenmp globals.cc dp.cc match.cc utils.cc MatchResult.cc ContigMapData.cc OpticalMapData.cc pugixml/pugixml.cpp -o ../bin/match
     
 debug_executable: match.cc globals.cc dp.cc utils.cc ContigMapData.cc MatchResult.cc OpticalMapData.cc
-	$(CXX) -fopenmp globals.cc dp.cc match.cc utils.cc MatchResult.cc \
+	$(CXX) $(CXXFLAGS) -fopenmp globals.cc dp.cc match.cc utils.cc MatchResult.cc \
 	          ContigMapData.cc \
 			  OpticalMapData.cc \
 			  pugixml/pugixml.cpp -o ../bin/match_d

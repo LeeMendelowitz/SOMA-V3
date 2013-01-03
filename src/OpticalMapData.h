@@ -13,12 +13,6 @@ class OpticalMapData
 {
     public:
 
-    int numFrags_; // Number of fragments in map (without circular trick!)
-    string opticalId_;
-    bool isCircular_;
-    vector<FragData> frags_; // vector of fragments (doubled if circular)
-
-    // Default Constructor
     OpticalMapData();
     OpticalMapData(int numFrags, const string& opticalId, bool isCircular, const vector<FragData>& frags);
     OpticalMapData(const string& mapFile, bool isCircular = 0);
@@ -32,6 +26,11 @@ class OpticalMapData
         assert( ind < numFrags_ && ind >= 0);
         return fragEndBp_[ind];
     }
+
+    int numFrags_; // Number of fragments in map (without circular trick!)
+    string opticalId_;
+    bool isCircular_;
+    vector<FragData> frags_; // vector of fragments (doubled if circular)
 
     private:
     vector<int> fragStartBp_; // starting location of fragment in bp

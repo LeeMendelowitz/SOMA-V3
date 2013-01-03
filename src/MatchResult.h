@@ -13,53 +13,59 @@ using namespace std;
 typedef pair<int,int> Index_t;
 
 // Represents an aligned fragment block ("chunk")
-class MatchedFrag
+class MatchedChunk
 {
     public:
+
+        typedef typename vector<FragData>::const_iterator FragDataConstIter;
+
         // Constructor
-        MatchedFrag () {}; // Default constructor
-        MatchedFrag(int opStart, int opEnd, const vector<FragData>& oData,
-                    int cStart, int cEnd, const vector<FragData>& cData) :
-        opStart_(opStart), opEnd_(opEnd), cStart_(cStart), cEnd_(cEnd),
-        opLength_(0), cLength_(0), opMisses_(opEnd-opStart-1),
-        cMisses_(cEnd-cStart-1)
+        //MatchedChunk () {}; // Default constructor
+        MatchedChunk(int opStart, int opEnd, int optStartBp, int opEndBp, const vector<FragData>& oData,
+                    int cStart, int cEnd, int cStartBp, int cEndBp, const vector<FragData>& cData) :
+                    opStart_(opStart), opEnd_(opEnd), opLength_(opEnd_- opStart_),
+                    cStart_(cStart), cEnd_(cEnd), cLength_(cEnd_ - cStart_),
+                    opMisses_(opEnd-opStart-1), cMisses_(cEnd-cStart-1)
         {
-            vector<FragData>::const_iterator it, ite, itb;
+
             contigGap_ = (opStart_ == opEnd_);
+            opFragB_ = oData.begin() + opStart_;
+            opFragE_ = oData.begin() + opEnd_;
+            cFragB_ = cData.begin() + cStart_;
+            cFragE_ = cData.begin() + cEnd_;
 
-            // Populate opticalFrags_
-            opFrags_.resize(opMisses_+1);
-            it = oData.begin();
-            copy(it+opStart_, it+opEnd_, opFrags_.begin());
+            assert ( (opFragB_ <= opFragE_) && (opFragB_ >= oData.begin()) && (opFragE_ <= oData.end()) );
+            assert ( (cFragB_ <= cFragE_) && (cFragB_ >= cData.begin()) && (cFragE_ <= cData.end()) );
 
-            // Populate contigFrags_;
-            cFrags_.resize(cMisses_+1);
-            it = cData.begin();
-            copy(it+cStart_, it+cEnd_, cFrags_.begin());
-    
-            itb = oData.begin() + opStart;
-            ite = oData.begin() + opEnd;
-            for(it=itb; it!=ite; it++)
-                opLength_ += it->size_;
-
-            itb = cData.begin() + cStart;
-            ite = cData.begin() + cEnd;
-            for(it=itb; it!=ite; it++)
-                cLength_ += it->size_;
+            // This is a boundary chunk if it includes the first contig fragment
+            // or the last contig fragment.
+            boundaryChunk_ =  cStart_ == 0 || ((size_t) cEnd_ == cData.size());
         }
 
         // Data
         bool contigGap_;
+        bool boundaryChunk_; // True if this is either the first or last matched chunk and is not bounded by two matched restriction sites. 
         int opStart_; // optical start index (zero based, inclusive)
         int opEnd_; // optical end index (exclusive)
         int opLength_; // optical fragment length (bp)
         int cStart_; // contig start index (zero based, inclusive)
         int cEnd_; // contig end index (exclusive)
         int cLength_; // contig fragment length (bp)
+
+        // Note: The optical map starting/ending positions are only approximate for the case
+        // of boundary chunks.
+        int cStartBp_; // contig fragment start, bp. (zero based, inclusive)
+        int cEndBp_; // contig end, bp. (exclusive)
+        int opStartBp_; // approximate optical start bp (zero based, inclusive)
+        int opEndBp_; // approximate optical end bp (exclusive).
+
         int opMisses_; // number of unaligned optical sites within the block
         int cMisses_; // number of unaligned contig sites within the block
-        vector<FragData> cFrags_;
-        vector<FragData> opFrags_;
+
+        FragDataConstIter cFragB_; // pointer to first contig fragment in chunk
+        FragDataConstIter cFragE_; // pointer to one beyond the last contig fragment in chunk
+        FragDataConstIter opFragB_; // pointer to first optical fragment in chunk
+        FragDataConstIter opFragE_; // pointer to one beyond the last optical fragment in chunk
 };
 
 //A struct for storing match result information about an alignment
@@ -77,8 +83,7 @@ class MatchResult {
 
     MatchResult(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix,
                  const ContigMapData * pContigMapData, const OpticalMapData * pOpticalMapData,
-                 bool forward);
-
+                 bool forward); 
     // Reset all attributes
     void reset();
 
@@ -133,7 +138,7 @@ class MatchResult {
     int cStartBp_;
     int cEndBp_;
     bool forward_; // contig oriented forward or backward
-    vector<MatchedFrag> matchedFragList_;
+    vector<MatchedChunk> matchedChunkList_;
 
     // Alignment statistics
     double score_;

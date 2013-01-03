@@ -20,7 +20,7 @@ OpticalMapData::OpticalMapData(int numFrags, const string& opticalId, bool isCir
 
 //Constructor (from file)
 OpticalMapData::OpticalMapData(const string& mapFile, bool isCircular) :
-    opticalId_(mapFile), isCircular_(isCircular), numFrags_(0)
+     numFrags_(0), opticalId_(mapFile), isCircular_(isCircular) 
 {
     readFile(mapFile);
     numFrags_ = frags_.size(); //Number of original fragments (before made circular)

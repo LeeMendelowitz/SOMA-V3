@@ -79,7 +79,8 @@ void ContigMapData::calcFragStartEnd()
     int curPos = 0;
     // Set the start for the first fragment
     fragStartBp_[0] = 0;
-    for(int i = 1; i < frags_.size()-1; i++)
+    size_t last = frags_.size()-1;
+    for(size_t i = 1; i < last; i++)
     {
         curPos += frags_[i-1].size_;
         fragEndBp_[i-1] = curPos;

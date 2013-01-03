@@ -7,7 +7,7 @@
 #include <numeric>
 
 #include "ScoreMatrix.h"
-#include "gamma-prob.c"
+//#include "gamma-prob.c"
 #include "globals.h"
 #include "utils.h"
 #include "match.h"
@@ -16,8 +16,8 @@
 #include "debugUtils.h"
 #include "localAlignmentScore.h"
 
-#define DEBUG_MATRIX 1
-#define DEBUG_MATCH_LOCAL 1
+#define DEBUG_MATRIX 0
+#define DEBUG_MATCH_LOCAL 0
 
 using namespace std;
 
@@ -177,7 +177,7 @@ ScoreMatrix_t * createScoreMatrix1(const vector<FragData>& contigFrags, const ve
             pScoreMatrix->d_[i*n+j] = d;
 
     // Dynamic programming
-    int i1, j1, nSitesContig, nSitesOptical, cFrag, oFrag;
+    int i1, j1, nSitesContig, nSitesOptical, cFrag;
     int cFragLength, oFragLength;
     double newScore;
     bool boundaryFrag; // True if the fragment is not bounded by two restriction sites
@@ -189,7 +189,6 @@ ScoreMatrix_t * createScoreMatrix1(const vector<FragData>& contigFrags, const ve
             // Do not start an alignment in the second half of a circular chromosome
             if (i==1 && j > numFragsInChromosome)
                 continue;
-            oFrag = opticalFrags[j-1].size_;
             pCur = &pScoreMatrix->d_[i*n+j];
 
             // Determine eligible extensions
@@ -359,20 +358,18 @@ ScoreMatrix_t * createLocalScoreMatrix(const vector<FragData>& contigFrags, cons
             pScoreMatrix->d_[i*n+j] = d;
 
     // Dynamic programming
-    int i1, j1, nSitesContig, nSitesOptical, cFrag, oFrag;
+    int i1, j1, nSitesContig, nSitesOptical;
     int cFragLength, oFragLength;
     double newScore;
     bool boundaryFrag; // True if the fragment is not bounded by two restriction sites
     ScoreElement_t * pCur,  * pPrev;
     for (int i=1; i < m; i++)
     {
-        cFrag = contigFrags[i-1].size_;
         for (int j=1; j < n; j++)
         {
             // Do not start an alignment in the second half of a circular chromosome
             if (i==1 && j > numFragsInChromosome)
                 continue;
-            oFrag = opticalFrags[j-1].size_;
             pCur = &pScoreMatrix->d_[i*n+j];
 
             // Determine eligible extensions
@@ -541,8 +538,8 @@ MatchResult *  matchLocal(const ContigMapData * pContigMapData, const OpticalMap
     const vector<FragData>& contigFrags = forward ? pContigMapData->frags_: pContigMapData->reverseFrags_;
     const int m = contigFrags.size() + 1; // num rows
     const int n = opticalFrags.size() + 1; // num cols
-    const int lr = m-1;
-    const int lro = lr*n;
+    //const int lr = m-1;
+    //const int lro = lr*n;
     const ScoreElement_t * pE;
     bool foundMatch = false;
 
@@ -551,10 +548,11 @@ MatchResult *  matchLocal(const ContigMapData * pContigMapData, const OpticalMap
 
     #if DEBUG_MATRIX > 0 
     string debugFileName;
+    debugFileName = pContigMapData->contigId_ + "_" + pOpticalMapData->opticalId_;
     if (forward)
-        debugFileName = "debugMatrix_forward.txt";
+        debugFileName += ".forward.txt";
     else
-        debugFileName = "debugMatrix_reverse.txt";
+        debugFileName += ".reverse.txt";
     writeMatrixToFile(pScoreMatrix, debugFileName);
     #endif
 
@@ -570,14 +568,16 @@ MatchResult *  matchLocal(const ContigMapData * pContigMapData, const OpticalMap
             if (pE->score_ > best_score)
             {
                 best_score = pE->score_;
-                best_index = Index_t(lr, j);
+                best_index = Index_t(i, j);
                 foundMatch = true;
             }
         }
     }
 
     #if DEBUG_MATCH_LOCAL > 0
-    std::cout << "Contig: " << pContigMapData->contigId_ << " FoundMatch: " << foundMatch << std::endl;
+    std::cout << "Contig: " << pContigMapData->contigId_ << " FoundMatch: " << foundMatch
+              << " BestIndex: " << best_index.first << "," << best_index.second
+              << std::endl;
     #endif
 
     // Create a MatchResult for the best scoring alignment, and make sure the alignment is valid.
@@ -660,7 +660,6 @@ MatchResult *  matchLocal(const ContigMapData * pContigMapData, const OpticalMap
 double matchPermutationTest(const ContigMapData * pContigMapData, const OpticalMapData * pOpticalMapData,
                      bool forward, const AlignmentParams& alignParams)
 {
-    MatchResult * bestMatch = 0;
     double best_score = -Constants::INF;
     Index_t best_index = Index_t(-1,-1);
     vector<FragData> opticalFrags = pOpticalMapData->frags_;

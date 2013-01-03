@@ -61,14 +61,13 @@ void runPermutationTests(MatchResultMap * pMatchResultMap, const vector<OpticalM
 void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<OpticalMapData *> opticalMapDataList, const vector<ContigMapData *>& contigVec, int numTrials);
 
 // Create a new vector replaced from orig where elements at positions
-// are replaced by eleemnts from replacements
+// are replaced by elements from replacements
 void replace(const vector<FragData>& orig, const vector<int>& positions,
                     const vector<FragData>& replacements, vector<FragData>& replaced) {
 
     replaced = orig;
-    int n = positions.size();
     vector<int>::const_iterator iter = positions.begin();
-    vector<int>::const_iterator end = positions.end();
+    const vector<int>::const_iterator end = positions.end();
     for(; iter != end; iter++)
         replaced[*iter] = replacements[*iter];
     return;
@@ -125,7 +124,7 @@ void readSilicoFile(const string& silicoFileName, vector<ContigMapData *>& retVe
         }
 
         // Check that the correct number of sites were read
-        assert(numSites == contigSites.size());
+        assert((size_t) numSites == contigSites.size());
 
         // Sort the sites based on location
         sort(contigSites.begin(), contigSites.end(), contigSiteDataVec_lt);
@@ -146,7 +145,6 @@ int main(int argc, char ** argv)
     ap->printArgs();
     
     Globals::initialize(); // Initialize dynamically created global variables
-    double size, sd;
 
     // Construct Optical Maps from file
     vector<OpticalMapData *> opticalMapDataList;
@@ -196,7 +194,6 @@ int main(int argc, char ** argv)
     }
 
     // Loop over contigs, starting with those with the most restriction sites
-    double C_sigma = Options::sdMin;
     const string emptyString = string("");
     
     MatchResultList allResults;
@@ -545,7 +542,6 @@ void matchContigToOpticalMaps(const ContigMapData * pContigMapData, const vector
     {
 
         OpticalMapData * pOpticalMapData = opticalMapDataList[i];
-        int opticalMapSize = pOpticalMapData->numFrags_;
 
         // Course-grained search for alignment, relaxing the standard devation restriction
         C_sigma = Options::sdMin;
