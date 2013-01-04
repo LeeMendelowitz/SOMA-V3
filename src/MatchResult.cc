@@ -9,168 +9,67 @@
 
 #define MR_DEBUG 0
 
-// This is the constructor for MatchResult
-// The MatchResult data is determined from the scoreMatrix and the end_index
-// and walking backwards through the scoreMatrix.
-MatchResult::MatchResult(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix,
-                         const ContigMapData * pContigMapData, const OpticalMapData * pOpticalMapData,
-                         bool forward)
+void MatchResult::setMatchedChunks(const MatchedChunkVec& matchedChunkList)
 {
-    reset();
-    chromosomeId_ = pOpticalMapData->opticalId_;
-    contigId_ = pContigMapData->contigId_;
-    forward_ = forward;
-    const int n = pScoreMatrix->n_;
-    const ScoreElement_t * pLastElement = &(pScoreMatrix->d_[end_index.first*n + end_index.second]);
-
-    score_ = pLastElement->score_; 
-
-    // Use the ScoreMatrix to determine the alignment from end_index
-    computeAlignment(end_index, pScoreMatrix, pContigMapData, pOpticalMapData);
+    matchedChunkList_ = matchedChunkList;
+    buildAlignmentAttributes();
 }
-
-// Build the matchedChunkList_  from a trail through the dynamic programming score table.
-// NOTE: Instead of calling computeAlignment, a MatchResult could easily be handed a trail of MatchedChunks
-// and the MatchResultAlignment could be computed from this. This would allow for much more flexible
-// construction of MatchResults from the dynamic programming table, if needed.
-void MatchResult::computeAlignment(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix,
-                          const ContigMapData * pContigMapData,
-                          const OpticalMapData * pOpticalMapData)
-{
-
-    const int m = pScoreMatrix->m_;
-    const int n = pScoreMatrix->n_;
-    ScoreElement_t * pE;
-    vector<Index_t> trail; // Trail through dynamic programming score table for the best alignment
-    vector<Index_t>::iterator ti;
-    Index_t ind = end_index;
-    const vector<FragData>& contigFrags = forward_ ? pContigMapData->frags_ : pContigMapData->reverseFrags_;
-    const vector<FragData>& opticalFrags = pOpticalMapData->frags_;
-
-    // Build the trail through scoreMatrix
-    trail.reserve(m);
-    trail.push_back(ind);
-    while (true)
-    {
-        pE = &(pScoreMatrix->d_[n*ind.first + ind.second]);
-        ind = make_pair(pE->pi_, pE->pj_);
-        if ((ind.first < 0) || (ind.second < 0) )
-            break;
-        trail.push_back(ind);
-    }
-    reverse(trail.begin(), trail.end());
-
-    #if MR_DEBUG > 0
-    std::cout << "Trail size: " << trail.size() << std::endl;
-    #endif
-
-    const vector<Index_t>::iterator tb = trail.begin();
-    const vector<Index_t>::iterator te = trail.end();
-    cStartIndex_ = tb->first;
-    opStartIndex_ = tb->second; // index of first aligned fragment in optical map
-    // Subtract 1 from the end_index of the dynamic programming score matrix
-    // because the dynamic programming score matrix has an inserted first row/column.
-    cEndIndex_ = end_index.first-1;
-    opEndIndex_ = end_index.second-1;
-
-    assert (opStartIndex_ >= 0);
-    assert (opEndIndex_ >= 0);
-
-    // Build the vector of matched fragments
-    matchedChunkList_.clear();
-    matchedChunkList_.reserve(trail.size());
-    int pc, po; // Contig and optical end index (exclusive) of predecessor matched fragment
-    int os, oe, cs, ce; // optical and contig start index inclusive and end index (exclusive) for matched fragment
-    pc = cStartIndex_;
-    po = opStartIndex_;
-    for(ti = tb+1; ti != te; ti++)
-    {
-        // Add this matched fragment to the matchedChunkList
-        // Reminder: matched fragment are given by the range of indexes
-        // from opStart inclusive to opEnd exclusive (ala python slicing)
-        cs = pc; // contig start index (inclusive, 0 based)
-        ce = ti->first; // contig end index (exclusive)
-        os = po; // optical start index (inclusive, 0 based)
-        oe = ti->second; // optical end index (exclusive, 0 based)
-
-        int cStartBp = pContigMapData->getStartBp(cs, forward_);
-        int cEndBp = pContigMapData->getEndBp(ce, forward_);
-        int opStartBp = pOpticalMapData->getStartBp(os);
-        int opEndBp = pOpticalMapData->getEndBp(os);
-
-        // For boundary cases where the matched chunk includes the first or last contig fragment,
-        // the chunk is not bounded by two matched restriction sites. Adjust the optical start/end positions
-        // accordingly.
-        if (cs == 0)
-        {
-            // Adjust the optical start position
-            opStartBp = opEndBp - (cEndBp - cStartBp);
-        }
-        else if ((size_t) ce == contigFrags.size())
-        {
-            opEndBp = opStartBp + (cEndBp - cStartBp);
-        }
-
-        MatchedChunk chunk = MatchedChunk(os, oe, opStartBp, opEndBp, opticalFrags,
-                                          cs, ce, cStartBp, cEndBp, contigFrags);
-        matchedChunkList_.push_back(chunk);
-        pc = ce; po = oe;
-    }
-
-    //////////////////////////////////////////////////////
-    //#ifdef DEBUG
-    // Check that there are at most two boundary chunks.
-    int boundaryCount = 0;
-    const vector<MatchedChunk>::const_iterator E = matchedChunkList_.end();
-    for (vector<MatchedChunk>::const_iterator iter = matchedChunkList_.begin();
-         iter != E;
-         iter++)
-    {
-        if (iter->boundaryChunk_)
-        {
-            boundaryCount++;
-            assert( iter == matchedChunkList_.begin() || iter == matchedChunkList_.end());
-        }
-    }
-    assert(boundaryCount <= 2);
-    //#endif
-    ////////////////////////////////////////////////////////
-}
-
 
 ostream& operator<<(ostream& os, const MatchResult& mr)
 {
-    os << mr.contigId_ << " " << mr.contigSize_ << " " << mr.forward_ << " "  << mr.opStartIndex_ << " " << mr.opEndIndex_ << "\n"
-                 << mr.totalMisses_ << " " << " " << mr.pval_ << "\n"
-                 << mr.opticalMatchString_ << "\n" << mr.contigMatchString_ << "\n";
+    os << mr.contigId_ << " "
+       << mr.chromosomeId_ << " "
+       << mr.contigSize_ << " "
+       << mr.forward_ << " "
+       << mr.opStartIndex_ << " "
+       << mr.opEndIndex_ << " "
+       << mr.cStartIndex_ << " "
+       << mr.cEndIndex_ << " "
+       << mr.totalMisses_ << " ";
+       //<< mr.pval_;
     return os;
 }
 
 
 void MatchResult::buildAlignmentAttributes()
 {
-    if (builtAlignmentAttributes_)
-        return;
-
 
     if (matchedChunkList_.empty()) return;
 
+    contigSize_ = 0;
+    contigUnalignedFrags_ = 0;
+    opticalMisses_ = 0;
+    contigMisses_ = 0;
+    contigHits_  = 0;
+    opticalHits_ = 0;
+    opticalTotalAlignedBases_ = 0;
+    contigTotalAlignedBases_ = 0;
+    contigInnerAlignedBases_ = 0;
+    opticalInnerAlignedBases_ = 0;
+    contigUnalignedBases_ = 0;
+    numAlignedInnerBlocks_ = 0;
+
     // Assign the starting and ending bp locations.
     const MatchedChunk& firstChunk = matchedChunkList_.front();
+    opStartIndex_ = firstChunk.opStart_;
+    cStartIndex_ = firstChunk.cStart_;
     opStartBp_ = firstChunk.opStartBp_;
     cStartBp_ = firstChunk.cStartBp_;
 
+
     const MatchedChunk& lastChunk = matchedChunkList_.back();
+    opEndIndex_ = lastChunk.opEnd_ - 1; // inclusive
+    cEndIndex_ = lastChunk.cEnd_ - 1; // inclusive
     opEndBp_ = lastChunk.opEndBp_;
     cEndBp_ = lastChunk.cEndBp_;
-
-    vector<FragData>::iterator pFrag;
 
     // Loop over the vector of matched fragment chunks and
     // compute alignment statistics and descriptive strings.
     typedef vector<MatchedChunk>::const_iterator ChunkIter;
     const ChunkIter mb = matchedChunkList_.begin();
     const ChunkIter me = matchedChunkList_.end();
+
+
     for (ChunkIter mi = mb; mi != me; mi++)
     {
         bool firstAlignment = (mi == mb);
@@ -221,7 +120,6 @@ void MatchResult::buildAlignmentAttributes()
                               max(contigInnerAlignedBases_, opticalInnerAlignedBases_);
     contigUnalignedBaseRatio_ = 1.0*contigUnalignedBases_/contigSize_;
 
-    builtAlignmentAttributes_ = true;
 }
 
 // Populate the descriptive strings for the alignment
@@ -303,7 +201,6 @@ void MatchResult::annotate()
 // Reset all attributes
 void MatchResult::reset()
 {
-    builtAlignmentAttributes_ = false;
 
     // Contig information
     contigId_.clear();

@@ -5,17 +5,13 @@
 #include <vector>
 
 #include "mapTypes.h"
+#include "MapData.h"
 
 using namespace std;
 
-class ContigMapData
+class ContigMapData : public MapData
 {
     public:
-    int numFrags_;
-    int length_; // The number of bases in contig
-    string contigId_;
-    vector<FragData> frags_;
-    vector<FragData> reverseFrags_; // reverse of frags_
 
     // Default Constructor
     ContigMapData();
@@ -23,21 +19,30 @@ class ContigMapData
     // Constructor
     ContigMapData(int length, const string& contigId, const vector<SiteData>& sites);
 
-    void getFrags(vector<FragData>& frags) const { frags = frags_;}
-    void getReverseFrags(vector<FragData>& frags) const { frags = reverseFrags_;}
+    const vector<FragData>& getFrags(bool forward=true) const
+    {
+        if(forward) return frags_;
+        else return reverseFrags_;
+    }
+
     void setFrags(const vector<FragData>& frags);
 
     // Get the starting and ending location of a restriction fragment
     int getStartBp(int ind, bool forward=true) const;
     int getEndBp(int ind, bool forward=true) const;
 
+    int numFrags_;
+    int length_; // The number of bases in contig
+    vector<FragData> frags_;
+    vector<FragData> reverseFrags_; // reverse of frags_
+
     private:
-    vector<int> fragStartBp_;
-    vector<int> fragEndBp_;
+    vector<int> fragBoundaryBp_; // indices of the boundaries for each contig fragment
 
     // Filter out any silico fragments of zero size
     void computeFragsFromSites(const vector<SiteData>& sites);
-    void calcFragStartEnd();
+    void calcFragBoundaries();
+
 };
 
 void reverseContigFragDataVec(const vector<FragData>& orig, vector<FragData>& reversed);

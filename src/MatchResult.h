@@ -1,6 +1,7 @@
 #ifndef MATCHRESULT_H
 #define MATCHRESULT_H
 
+#include <cstdlib>
 #include <numeric>
 
 #include "ScoreMatrix.h"
@@ -10,7 +11,6 @@
 
 using namespace std;
 
-typedef pair<int,int> Index_t;
 
 // Represents an aligned fragment block ("chunk")
 class MatchedChunk
@@ -21,11 +21,13 @@ class MatchedChunk
 
         // Constructor
         //MatchedChunk () {}; // Default constructor
-        MatchedChunk(int opStart, int opEnd, int optStartBp, int opEndBp, const vector<FragData>& oData,
+        MatchedChunk(int opStart, int opEnd, int opStartBp, int opEndBp, const vector<FragData>& oData,
                     int cStart, int cEnd, int cStartBp, int cEndBp, const vector<FragData>& cData) :
-                    opStart_(opStart), opEnd_(opEnd), opLength_(opEnd_- opStart_),
-                    cStart_(cStart), cEnd_(cEnd), cLength_(cEnd_ - cStart_),
-                    opMisses_(opEnd-opStart-1), cMisses_(cEnd-cStart-1)
+                    opStart_(opStart), opEnd_(opEnd), opLength_(opEndBp - opStartBp),
+                    cStart_(cStart), cEnd_(cEnd), cLength_(abs(cEndBp - cStartBp)),
+                    opStartBp_(opStartBp), opEndBp_(opEndBp),
+                    cStartBp_(cStartBp), cEndBp_(cEndBp), 
+                    cMisses_(cEnd-cStart-1)
         {
 
             contigGap_ = (opStart_ == opEnd_);
@@ -34,8 +36,13 @@ class MatchedChunk
             cFragB_ = cData.begin() + cStart_;
             cFragE_ = cData.begin() + cEnd_;
 
+            opMisses_ = contigGap_ ? 0 : opEnd - opStart - 1;
+
             assert ( (opFragB_ <= opFragE_) && (opFragB_ >= oData.begin()) && (opFragE_ <= oData.end()) );
             assert ( (cFragB_ <= cFragE_) && (cFragB_ >= cData.begin()) && (cFragE_ <= cData.end()) );
+            assert ( ( cStart_ >= 0 ) && ((size_t) cStart_ <= cData.size()) );
+            assert ( ( cEnd_ >= 0) && ((size_t) cEnd_ <= cData.size()) );
+            assert ( cStart_ <= cEnd_ );
 
             // This is a boundary chunk if it includes the first contig fragment
             // or the last contig fragment.
@@ -54,10 +61,10 @@ class MatchedChunk
 
         // Note: The optical map starting/ending positions are only approximate for the case
         // of boundary chunks.
-        int cStartBp_; // contig fragment start, bp. (zero based, inclusive)
-        int cEndBp_; // contig end, bp. (exclusive)
         int opStartBp_; // approximate optical start bp (zero based, inclusive)
         int opEndBp_; // approximate optical end bp (exclusive).
+        int cStartBp_; // contig fragment start, bp. (zero based, inclusive)
+        int cEndBp_; // contig end, bp. (exclusive)
 
         int opMisses_; // number of unaligned optical sites within the block
         int cMisses_; // number of unaligned contig sites within the block
@@ -67,6 +74,8 @@ class MatchedChunk
         FragDataConstIter opFragB_; // pointer to first optical fragment in chunk
         FragDataConstIter opFragE_; // pointer to one beyond the last optical fragment in chunk
 };
+
+typedef std::vector<MatchedChunk> MatchedChunkVec;
 
 //A struct for storing match result information about an alignment
 class MatchResult {
@@ -81,16 +90,20 @@ class MatchResult {
         reset();
     };
 
-    MatchResult(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix,
-                 const ContigMapData * pContigMapData, const OpticalMapData * pOpticalMapData,
-                 bool forward); 
+    MatchResult(const string& contigId, const string& opticalId, bool contigIsForward, double score)
+    {
+        reset();
+        contigId_ = contigId;
+        chromosomeId_ = opticalId;
+        forward_ = contigIsForward;
+        score_ = score;
+    };
+
     // Reset all attributes
     void reset();
 
-    // Compute the alignment using the dynamic programming scoring table
-    void computeAlignment(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix,
-                          const ContigMapData * pContigMapData,
-                          const OpticalMapData * pOpticalMapData);
+    // Set matched chunks, which defines the alignment.
+    void setMatchedChunks(const MatchedChunkVec& chunks);
 
     // Build additional alignment attributes
     void buildAlignmentAttributes();
@@ -125,7 +138,7 @@ class MatchResult {
 
     // Contig information
     string contigId_;
-    int contigSize_; // size of the contig (bp)
+    int contigSize_; // size of the matched portion of the contig (bp)
 
     // Alignment location & orientation
     string chromosomeId_;
@@ -134,7 +147,7 @@ class MatchResult {
     int opStartBp_; //bp position of the start of the match, relative to the beginning of the entire optical map
     int opEndBp_; // bp position of the end of the match, relative to the end of the entire optical map
     int cStartIndex_;
-    int cEndIndex_;
+    int cEndIndex_; // (inclusive)
     int cStartBp_;
     int cEndBp_;
     bool forward_; // contig oriented forward or backward
@@ -169,13 +182,10 @@ class MatchResult {
     string contigLostIndexString_;
     string opticalMatchString_;
     string opticalAlignedIndexString_;
-
-
-    private:
-    bool builtAlignmentAttributes_;
-
 };
 
 ostream& operator<<(ostream& os, const MatchResult& mr);
+
+typedef pair<int,int> Index_t;
 
 #endif

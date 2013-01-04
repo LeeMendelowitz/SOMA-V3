@@ -6,15 +6,18 @@
 
 // Default Constructor
 ContigMapData::ContigMapData() :
-    numFrags_(0), length_(0), contigId_(""), frags_(vector<FragData>()) {};
+    MapData(""),
+    numFrags_(0), length_(0) 
+    {};
 
 // Constructor
 // Create the frags_ from the sites vector provided
 ContigMapData::ContigMapData(int length, const string& contigId, const vector<SiteData>& sites) :
-    length_(length), contigId_(contigId)
+    MapData(contigId),
+    length_(length)
 {
     computeFragsFromSites(sites);
-    calcFragStartEnd();
+    calcFragBoundaries();
 }
 
 void ContigMapData::setFrags(const vector<FragData>& frags)
@@ -22,7 +25,7 @@ void ContigMapData::setFrags(const vector<FragData>& frags)
     frags_ = frags;
     reverseContigFragDataVec(frags_, reverseFrags_);
     numFrags_ = frags.size();
-    calcFragStartEnd();
+    calcFragBoundaries();
 }
 
 void ContigMapData::computeFragsFromSites(const vector<SiteData>& sites)
@@ -72,34 +75,33 @@ void reverseContigFragDataVec(const vector<FragData>& orig, vector<FragData>& re
 
 // Calculate the starting and ending position of each restriction fragment (in bp)
 // within the contig
-void ContigMapData::calcFragStartEnd()
+void ContigMapData::calcFragBoundaries()
 {
-    fragStartBp_ = vector<int>(frags_.size(), 0);
-    fragEndBp_ = vector<int>(frags_.size(), 0);
+    const size_t N = frags_.size();
+    fragBoundaryBp_ = vector<int>(N+1);
     int curPos = 0;
-    // Set the start for the first fragment
-    fragStartBp_[0] = 0;
-    size_t last = frags_.size()-1;
-    for(size_t i = 1; i < last; i++)
+    for (size_t i = 0; i < N; i++)
     {
-        curPos += frags_[i-1].size_;
-        fragEndBp_[i-1] = curPos;
-        fragStartBp_[i] = curPos;
+        curPos += frags_[i].size_;
+        fragBoundaryBp_[i+1] = curPos;
     }
-    // Set the end for the last fragment
-    curPos += frags_[frags_.size()-1].size_;
-    fragEndBp_[frags_.size()-1] = curPos;
 }
 
 int ContigMapData::getStartBp(int ind, bool forward) const
 {
     if (forward)
     {
-        return fragStartBp_[ind];
+        assert((size_t) ind < fragBoundaryBp_.size());
+        assert(ind >= 0);
+        return fragBoundaryBp_[ind];
     }
     else
     {
-        return fragEndBp_[frags_.size() - 1 - ind];
+        size_t last = fragBoundaryBp_.size() - 1;
+        size_t myInd = last - ind;
+        assert(myInd < fragBoundaryBp_.size());
+        assert(myInd >= 0);
+        return fragBoundaryBp_[myInd];
     }
 }
 
@@ -107,10 +109,17 @@ int ContigMapData::getEndBp(int ind, bool forward) const
 {
     if (forward)
     {
-        return fragEndBp_[ind];
+        size_t myInd = ind+1;
+        assert(myInd < fragBoundaryBp_.size());
+        assert(myInd >= 0);
+        return fragBoundaryBp_[myInd];
     }
     else
     {
-        return fragStartBp_[frags_.size() - 1 - ind];
+        size_t last = fragBoundaryBp_.size() - 1;
+        size_t myInd = last - (ind+1);
+        assert(myInd < fragBoundaryBp_.size());
+        assert(myInd >= 0);
+        return fragBoundaryBp_[myInd];
     }
 }
