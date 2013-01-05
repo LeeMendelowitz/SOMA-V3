@@ -116,7 +116,9 @@ class MatchResult {
     }
 
     // Return true if this MatchResult overlaps with
-    // matchResult pMatch.
+    // matchResult pMatch. 
+    // Two MatchResults overlap if they align to the same strand of the same reference
+    // map.
     bool overlaps(const MatchResult * pMatch) const
     {
         if (pMatch->chromosomeId_ != this->chromosomeId_)

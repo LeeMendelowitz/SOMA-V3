@@ -18,23 +18,37 @@ class OpticalMapData : public MapData
     OpticalMapData(int numFrags, const string& opticalId, bool isCircular, const vector<FragData>& frags);
     OpticalMapData(const string& mapFile, bool isCircular = 0);
 
-    int getStartBp(int ind, bool forward=true) const {
-        assert( (size_t) ind < frags_.size() && ind >= 0);
+    int getStartBp(int ind, bool forward=true) const
+    {
+        assert((size_t) ind >= 0);
+        assert((size_t) ind < frags_.size());
+
         if (forward)
-        {
-            return fragStartBp_[ind];
-        }
-        return fragEndBp_[frags_.size() - 1 - ind];
+            return fragBoundaryBp_[ind];
+
+        // Contig is reverse, get the boundary position counting from the right
+        size_t last = fragBoundaryBp_.size() - 1;
+        size_t myInd = last - ind;
+        return fragBoundaryBp_[myInd];
     }
 
-    int getEndBp(int ind, bool forward=true) const {
-        assert( (size_t) ind < frags_.size() && ind >= 0);
+    int getEndBp(int ind, bool forward=true) const
+    {
+        assert((size_t) ind >= 0);
+        assert((size_t) ind < frags_.size());
+
         if (forward)
-        {
-            return fragEndBp_[ind];
-        }
-        return fragStartBp_[frags_.size() -1 - ind];
+            return fragBoundaryBp_[ind+1]; 
+
+        // Contig is reverse, get the boundary position counting from the right
+        size_t last = fragBoundaryBp_.size() - 1;
+        size_t myInd = last - (ind + 1);
+        return fragBoundaryBp_[myInd];
     }
+   
+    // Get the number of fragments in the Optical map
+    size_t getNumFrags() const { return numFrags_; }
+
 
     const vector<FragData>& getFrags(bool forward=true) const
     {
@@ -42,18 +56,18 @@ class OpticalMapData : public MapData
         else return reverseFrags_;
     }
 
-    int numFrags_; // Number of fragments in map (without circular trick!)
-    bool isCircular_;
-    vector<FragData> frags_; // vector of fragments (doubled if circular)
-    vector<FragData> reverseFrags_;
+    bool isCircular() const {return isCircular_;}
 
     private:
-    vector<int> fragStartBp_; // starting location of fragment in bp
-    vector<int> fragEndBp_; // ending location of fragment in bp
+    vector<int> fragBoundaryBp_; // The boundaries (in bp) of the restriction fragments in map
+    vector<FragData> frags_; // vector of fragments (doubled if circular)
+    vector<FragData> reverseFrags_;
+    int numFrags_; // Number of fragments in map (without circular trick!)
+    bool isCircular_;
 
     // Calculate the starting and ending position of each optical fragment (in bp)
     // within the optical map
-    void calcFragStartEnd();
+    void calcFragBoundaries();
     void makeCircular();
     void readFile(const string&);
 };

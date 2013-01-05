@@ -15,7 +15,7 @@ namespace Constants
 }
 
 // Options set by ParseArgs
-namespace Options
+namespace opt
 {
     string silicoMap;
     vector<string> opticalMapList;

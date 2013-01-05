@@ -27,8 +27,8 @@ using namespace std;
 // (gapped alignment)
 double gapPenalty(int fragSize)
 {
-    if (fragSize < Options::smallFrag)
-        return -fragSize * Options::smallFragSlope;
+    if (fragSize < opt::smallFrag)
+        return -fragSize * opt::smallFragSlope;
     else
         return -Constants::INF;
 }
@@ -36,8 +36,8 @@ double gapPenalty(int fragSize)
 // Penalty for missing a contig restriction site
 double contigMissedSitePenalty(int dToClosestSite)
 {
-    if (dToClosestSite > Options::smallFrag)
-        return -Options::C_r_contig;
+    if (dToClosestSite > opt::smallFrag)
+        return -opt::C_r_contig;
     else
     {   
         // Add a small amount to the penalty to break ties with the gapPenalty
@@ -65,12 +65,12 @@ double scoringFunction(int nContigSites, int nOpticalSites,
         double dl = (contigLength-opticalLength);
         chi2 = dl*dl/var;
         assert (chi2 >= -1E-12);
-        // Only allow Options::sdMax standard deviations in sizing error
-        if (chi2 > Options::sdMax*Options::sdMax)
+        // Only allow opt::sdMax standard deviations in sizing error
+        if (chi2 > opt::sdMax*opt::sdMax)
             return -Constants::INF;
     }
-    return -(nContigSites*Options::C_r_contig +
-           nOpticalSites*Options::C_r_optical +
+    return -(nContigSites*opt::C_r_contig +
+           nOpticalSites*opt::C_r_optical +
            chi2);
 }
 
@@ -104,8 +104,8 @@ double scoringFunction2( const vector<FragData>::const_iterator& cB,
         double dl = (contigLength-opticalLength);
         chi2 = dl*dl/var;
         assert (chi2 >= -1E-12);
-        // Only allow Options::sdMax standard deviations in sizing error
-        if (chi2 > Options::sdMax*Options::sdMax)
+        // Only allow opt::sdMax standard deviations in sizing error
+        if (chi2 > opt::sdMax*opt::sdMax)
             return -Constants::INF;
     }
     chi2 = -1.0*chi2;
@@ -113,7 +113,7 @@ double scoringFunction2( const vector<FragData>::const_iterator& cB,
     // Compute miss penalty
     double contigMissScore = 0.0;
     int numOpticalFrags = oE - oB;
-    double opticalMissScore = -Options::C_r_optical*(numOpticalFrags-1);
+    double opticalMissScore = -opt::C_r_optical*(numOpticalFrags-1);
     int pos = 0;
     for(ci = cB; ci != cE-1; ci++)
     {
@@ -413,18 +413,18 @@ MatchResult *  match(const ContigMapData * pContigMap, const OpticalMapData * pO
                      vector<MatchResult *> * pAllMatches, bool forward, const AlignmentParams& alignParams)
 {
     MatchResult * bestMatch = 0;
-    vector<FragData> opticalFrags = pOpticalMap->frags_;
-    const vector<FragData>& contigFrags = forward ? pContigMap->frags_: pContigMap->reverseFrags_;
+    const vector<FragData>& opticalFrags = pOpticalMap->getFrags();
+    const vector<FragData>& contigFrags = pContigMap->getFrags(forward);
     //const int m = contigFrags.size() + 1; // num rows
     //const int n = opticalFrags.size() + 1; // num cols
     //const int lr = m-1;
     //const int lro = lr*n;
 
     // Create the scoreMatrix
-    ScoreMatrix_t * pScoreMatrix = createScoreMatrix2(contigFrags, opticalFrags, pOpticalMap->numFrags_, alignParams);
+    ScoreMatrix_t * pScoreMatrix = createScoreMatrix2(contigFrags, opticalFrags, pOpticalMap->getNumFrags(), alignParams);
 
     // Build matches from the score matrix
-    StandardMatchMaker matchMaker;
+    StandardMatchMaker matchMaker(opt::maxMatchesPerContig);
     MatchResultPtrVec matches;
     matchMaker.makeMatches(pScoreMatrix, matches, pOpticalMap, pContigMap, forward);
 
@@ -477,8 +477,8 @@ MatchResult *  matchLocal(const ContigMapData * pContigMap, const OpticalMapData
     MatchResult * bestMatch = 0;
     double best_score = 0.0;
     Index_t best_index = Index_t(-1,-1);
-    vector<FragData> opticalFrags = pOpticalMap->frags_;
-    const vector<FragData>& contigFrags = forward ? pContigMap->frags_: pContigMap->reverseFrags_;
+    const vector<FragData>& opticalFrags = pOpticalMap->getFrags();
+    const vector<FragData>& contigFrags = pContigMap->getFrags(forward);
     const int m = contigFrags.size() + 1; // num rows
     const int n = opticalFrags.size() + 1; // num cols
     //const int lr = m-1;
@@ -492,7 +492,7 @@ MatchResult *  matchLocal(const ContigMapData * pContigMap, const OpticalMapData
 
     /*
     // Create the scoreMatrix
-    ScoreMatrix_t * pScoreMatrix = createLocalScoreMatrix(contigFrags, opticalFrags, pOpticalMap->numFrags_, alignParams);
+    ScoreMatrix_t * pScoreMatrix = createLocalScoreMatrix(contigFrags, opticalFrags, pOpticalMap->getNumFrags(), alignParams);
 
     #if DEBUG_MATRIX > 0 
     string debugFileName;
@@ -573,8 +573,8 @@ double matchPermutationTest(const ContigMapData * pContigMap, const OpticalMapDa
 {
     double best_score = -Constants::INF;
     Index_t best_index = Index_t(-1,-1);
-    vector<FragData> opticalFrags = pOpticalMap->frags_;
-    const vector<FragData>& contigFrags = forward ? pContigMap->frags_: pContigMap->reverseFrags_;
+    const vector<FragData>& opticalFrags = pOpticalMap->getFrags();
+    const vector<FragData>& contigFrags = pContigMap->getFrags(forward);
     const int m = contigFrags.size() + 1; // num rows
     const int n = opticalFrags.size() + 1; // num cols
     const int lr = m-1;
@@ -584,13 +584,13 @@ double matchPermutationTest(const ContigMapData * pContigMap, const OpticalMapDa
     bool contigHit = false;
 
     // Create the scoreMatrix
-    ScoreMatrix_t * pScoreMatrix = createScoreMatrix2(contigFrags, opticalFrags, pOpticalMap->numFrags_, alignParams);
+    ScoreMatrix_t * pScoreMatrix = createScoreMatrix2(contigFrags, opticalFrags, pOpticalMap->getNumFrags(), alignParams);
 
     assert (pScoreMatrix->m_ == m);
     assert (pScoreMatrix->n_ == n);
 
     // In first pass over last row of the pScoreMatrix, find the best match
-    if (Options::oneToOneMatch)
+    if (opt::oneToOneMatch)
     {
         // We are matching the entire contig to the entire optical map
         pE = &pScoreMatrix->d_[lro + n-1];

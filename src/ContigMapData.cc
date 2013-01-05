@@ -7,7 +7,7 @@
 // Default Constructor
 ContigMapData::ContigMapData() :
     MapData(""),
-    numFrags_(0), length_(0) 
+    length_(0) 
     {};
 
 // Constructor
@@ -24,7 +24,6 @@ void ContigMapData::setFrags(const vector<FragData>& frags)
 {
     frags_ = frags;
     reverseContigFragDataVec(frags_, reverseFrags_);
-    numFrags_ = frags.size();
     calcFragBoundaries();
 }
 
@@ -58,9 +57,9 @@ void ContigMapData::computeFragsFromSites(const vector<SiteData>& sites)
     //fragData.missCost_ = missedFragmentCostFunc(fragData.size_);
     fragData.pos_ = pos++;
     if (fragData.size_>0) frags_.push_back(fragData);
-    numFrags_ = frags_.size();
+    size_t numFrags = frags_.size();
     frags_[0].firstOrLastFrag_ = true;
-    frags_[numFrags_-1].firstOrLastFrag_ = true;
+    frags_[numFrags-1].firstOrLastFrag_ = true;
 
     // Compute reverseFrags_
     reverseContigFragDataVec(frags_, reverseFrags_);
@@ -84,42 +83,5 @@ void ContigMapData::calcFragBoundaries()
     {
         curPos += frags_[i].size_;
         fragBoundaryBp_[i+1] = curPos;
-    }
-}
-
-int ContigMapData::getStartBp(int ind, bool forward) const
-{
-    if (forward)
-    {
-        assert((size_t) ind < fragBoundaryBp_.size());
-        assert(ind >= 0);
-        return fragBoundaryBp_[ind];
-    }
-    else
-    {
-        size_t last = fragBoundaryBp_.size() - 1;
-        size_t myInd = last - ind;
-        assert(myInd < fragBoundaryBp_.size());
-        assert(myInd >= 0);
-        return fragBoundaryBp_[myInd];
-    }
-}
-
-int ContigMapData::getEndBp(int ind, bool forward) const
-{
-    if (forward)
-    {
-        size_t myInd = ind+1;
-        assert(myInd < fragBoundaryBp_.size());
-        assert(myInd >= 0);
-        return fragBoundaryBp_[myInd];
-    }
-    else
-    {
-        size_t last = fragBoundaryBp_.size() - 1;
-        size_t myInd = last - (ind+1);
-        assert(myInd < fragBoundaryBp_.size());
-        assert(myInd >= 0);
-        return fragBoundaryBp_[myInd];
     }
 }

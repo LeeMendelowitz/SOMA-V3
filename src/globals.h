@@ -17,7 +17,7 @@ namespace Constants
 }
 
 // Options set by ParseArgs
-namespace Options
+namespace opt
 {
     extern string silicoMap;
     extern vector<string> opticalMapList;

@@ -103,10 +103,10 @@ void ArgParser::printArgs()
 {
 
     ostringstream oss;
-    int numOpticalMaps = Options::opticalMapList.size();
+    int numOpticalMaps = opt::opticalMapList.size();
     for (int i=0; i < numOpticalMaps; i++)
     {
-        oss << Options::opticalMapList[i];
+        oss << opt::opticalMapList[i];
         if (i!=(numOpticalMaps-1)) oss << ", ";
     }
     string opMapString = oss.str();
@@ -114,26 +114,26 @@ void ArgParser::printArgs()
     std::cout << "**********************************************\n"
               << "Running with Inputs:\n\n" 
               << "OpticalMaps: " << opMapString << "\n"
-              << "SilicoMap: " << Options::silicoMap << "\n"
-              << "Circular: " << Options::circular << "\n"
-              << "LocalAlignment: " << Options::localAlignment << "\n"
- //             << "AllowFalseCuts: " << Options::allowFalseCuts << "\n"
-//              << "matchFragmentOnce: " << Options::matchFragmentOnce << "\n"
-              << "noReverse: " << Options::noReverse << "\n"
-              << "oneToOneMatch: " << Options::oneToOneMatch << "\n"
-//              << "allowGaps: " << Options::allowGaps << "\n"
-              << "sdMin: " << Options::sdMin << "\n"
-              << "sdMax: " << Options::sdMax << "\n"
-  //            << "maxGapSize: " << Options::maxGapSize << "\n"
-              << "pThreshold: " << Options::pThreshold << "\n"
-              << "outputPrefix: " << Options::outputPrefix << "\n"
-              //<< "C_s: " << Options::C_s << "\n"
-              << "C_r_contig: " << Options::C_r_contig << "\n"
-              << "C_r_optical: " << Options::C_r_optical << "\n"
-   //           << "falseCutRate: " << Options::falseCutRate << "\n"
-              << "maxMissRateContig: " << Options::maxMissRateContig << "\n"
-              << "numPermutationTrials: " << Options::numPermutationTrials << "\n"
-              << "numThreads: " << Options::numThreads << "\n"
+              << "SilicoMap: " << opt::silicoMap << "\n"
+              << "Circular: " << opt::circular << "\n"
+              << "LocalAlignment: " << opt::localAlignment << "\n"
+ //             << "AllowFalseCuts: " << opt::allowFalseCuts << "\n"
+//              << "matchFragmentOnce: " << opt::matchFragmentOnce << "\n"
+              << "noReverse: " << opt::noReverse << "\n"
+              << "oneToOneMatch: " << opt::oneToOneMatch << "\n"
+//              << "allowGaps: " << opt::allowGaps << "\n"
+              << "sdMin: " << opt::sdMin << "\n"
+              << "sdMax: " << opt::sdMax << "\n"
+  //            << "maxGapSize: " << opt::maxGapSize << "\n"
+              << "pThreshold: " << opt::pThreshold << "\n"
+              << "outputPrefix: " << opt::outputPrefix << "\n"
+              //<< "C_s: " << opt::C_s << "\n"
+              << "C_r_contig: " << opt::C_r_contig << "\n"
+              << "C_r_optical: " << opt::C_r_optical << "\n"
+   //           << "falseCutRate: " << opt::falseCutRate << "\n"
+              << "maxMissRateContig: " << opt::maxMissRateContig << "\n"
+              << "numPermutationTrials: " << opt::numPermutationTrials << "\n"
+              << "numThreads: " << opt::numThreads << "\n"
               << "**********************************************\n";
 }
 
@@ -144,53 +144,53 @@ error_t parse_opt(int key, char *arg, struct argp_state *state)
     ArgParser * ap = ArgParser::instance();
     int arg_num = state->arg_num;
     if (key == ap->getKey("circular") ){
-        Options::circular = true;
+        opt::circular = true;
     } else if (key == ap->getKey("local")) {
-        Options::localAlignment = true;
+        opt::localAlignment = true;
     //} else if (key == ap->getKey("allowFalseCuts") ) {
-     //   Options::allowFalseCuts = true;
+     //   opt::allowFalseCuts = true;
     //} else if (key == ap->getKey("allowGaps") ) {
-        //Options::allowGaps = true;
+        //opt::allowGaps = true;
     //} else if (key == ap->getKey("matchFragmentOnce") ) {
-        //Options::matchFragmentOnce = true;
+        //opt::matchFragmentOnce = true;
     } else if (key == ap->getKey("noReverse") ) {
-        Options::noReverse = true;
+        opt::noReverse = true;
     } else if (key == ap->getKey("oneToOneMatch") ) {
-        Options::oneToOneMatch = true;
+        opt::oneToOneMatch = true;
     } else if (key == ap->getKey("sdMin")) {
-        Options::sdMin = atoi(arg);
+        opt::sdMin = atoi(arg);
     } else if (key == ap->getKey("sdMax")) {
-        Options::sdMax = atoi(arg);
+        opt::sdMax = atoi(arg);
     } else if (key == ap->getKey("pvalue")) {
-        Options::pThreshold = atof(arg);
+        opt::pThreshold = atof(arg);
     } else if (key == ap->getKey("output")) {
-        Options::outputPrefix = arg;
+        opt::outputPrefix = arg;
     } else if (key == ap->getKey("siteCostContig")) {
-        Options::C_r_contig = atof(arg);
+        opt::C_r_contig = atof(arg);
     } else if (key == ap->getKey("siteCostOptical")) {
-        Options::C_r_optical = atof(arg);
+        opt::C_r_optical = atof(arg);
     //} else if (key == ap->getKey("falseCutRate")) {
-        //Options::falseCutRate = atof(arg);
+        //opt::falseCutRate = atof(arg);
     } else if (key == ap->getKey("maxMissRateContig")) {
-        Options::maxMissRateContig = atof(arg);
+        opt::maxMissRateContig = atof(arg);
     } else if (key == ap->getKey("numPermutationTrials")) {
-        Options::numPermutationTrials = atoi(arg);
+        opt::numPermutationTrials = atoi(arg);
     } else if (key == ap->getKey("numThreads")) {
         int numThreads = atoi(arg);
         assert(numThreads > 0);
-        Options::numThreads = numThreads;
+        opt::numThreads = numThreads;
     //} else if (key == ap->getKey("maxGapSize")) {
-        //Options::maxGapSize = atoi(arg);
+        //opt::maxGapSize = atoi(arg);
     } else if (key ==  ARGP_KEY_ARG) {
         if (arg_num == 0)
         {
             // Set silico map
-            Options::silicoMap = arg;
+            opt::silicoMap = arg;
         }
         else
         {
             // Set optical map
-            Options::opticalMapList.push_back(string(arg));
+            opt::opticalMapList.push_back(string(arg));
         }
     } else if (key == ARGP_KEY_END) {
         if (arg_num < 2) {

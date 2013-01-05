@@ -36,11 +36,9 @@ using namespace Globals; // from globals.h
 
 
 float betai(float a, float b, float x);
-void filterResults(vector<MatchResult *>& results);
-bool filterFunction(MatchResult * pMatchResult);
 
-typedef vector<MatchResult *> MatchResultList;
-typedef map<ContigMapData *, MatchResultList> MatchResultMap;
+typedef vector<MatchResult *> MatchResultPtrVec;
+typedef map<ContigMapData *, MatchResultPtrVec> MatchResultMap;
 
 ostream& operator<<(ostream& ss, const SiteData& siteData)
 {
@@ -49,7 +47,7 @@ ostream& operator<<(ostream& ss, const SiteData& siteData)
 
 // Sort Algorithm Comparisons
 bool contigDataVec_comp(const ContigMapData * pContig1, const ContigMapData * pContig2)
-    { return pContig1->numFrags_ > pContig2->numFrags_; }
+    { return pContig1->getNumFrags() > pContig2->getNumFrags(); }
 bool contigSiteDataVec_lt(const SiteData& sd1, const SiteData& sd2) {return sd1.loc_ < sd2.loc_;}
 bool contigFragDataVec_lt(const FragData& fd1, const FragData& fd2) { return fd1.size_ < fd2.size_; }
 bool resultScoreComp(const MatchResult * r1, const MatchResult * r2) { return r1->score_ > r2->score_; }
@@ -59,7 +57,8 @@ bool resultScoreComp(const MatchResult * r1, const MatchResult * r2) { return r1
 //              vector<MatchResult *> * const pOthers, const AlignmentParams& alignParams);
 
 void matchContigToOpticalMaps(const ContigMapData * pContigMap, const vector<OpticalMapData *>& opticalMapList,
-                              vector<MatchResult *> * const pResults, bool getOthers = true, bool localAlignment = false);
+                              vector<MatchResult *> * const pResults, bool localAlignment = false);
+
 void runPermutationTests(MatchResultMap * pMatchResultMap, const vector<OpticalMapData *> opticalMapList, int numTrials);
 void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<OpticalMapData *> opticalMapList, const vector<ContigMapData *>& contigVec, int numTrials);
 
@@ -151,13 +150,13 @@ int main(int argc, char ** argv)
 
     // Construct Optical Maps from file
     vector<OpticalMapData *> opticalMapList;
-    int numOpticalMaps = Options::opticalMapList.size();
+    int numOpticalMaps = opt::opticalMapList.size();
     for(int i=0; i<numOpticalMaps; i++)
     {
-        string opticalMapFile = Options::opticalMapList[i];
+        string opticalMapFile = opt::opticalMapList[i];
         OpticalMapData * pOpticalMap = 0;
         try {
-            pOpticalMap = new OpticalMapData(opticalMapFile, Options::circular);
+            pOpticalMap = new OpticalMapData(opticalMapFile, opt::circular);
         }
         catch (Exception& e)
         {
@@ -165,13 +164,13 @@ int main(int argc, char ** argv)
             return(1);
         }
         opticalMapList.push_back(pOpticalMap);
-        cout << "Read Optical Map " << opticalMapFile << " with " << pOpticalMap->numFrags_ << " fragments." << "\n";
+        cout << "Read Optical Map " << opticalMapFile << " with " << pOpticalMap->getNumFrags() << " fragments." << "\n";
     }
 
     // Read Silico file with contig map data    
     vector<ContigMapData *> contigVec;
     try {
-        readSilicoFile(Options::silicoMap, contigVec);
+        readSilicoFile(opt::silicoMap, contigVec);
     } 
     catch(Exception& e)
     {
@@ -187,8 +186,8 @@ int main(int argc, char ** argv)
     //Setup output file streams
     XMLWriter xmlWriterAll, xmlWriterSig;
     try {
-        xmlWriterAll.open((Options::outputPrefix + "_AllMatches.xml").c_str());
-        xmlWriterSig.open((Options::outputPrefix + "_SigMatches.xml").c_str());
+        xmlWriterAll.open((opt::outputPrefix + "_AllMatches.xml").c_str());
+        xmlWriterSig.open((opt::outputPrefix + "_SigMatches.xml").c_str());
     }
     catch (Exception& e)
     {
@@ -199,9 +198,9 @@ int main(int argc, char ** argv)
     // Loop over contigs, starting with those with the most restriction sites
     const string emptyString = string("");
     
-    MatchResultList allResults;
+    MatchResultPtrVec allResults;
     MatchResultMap  matchResultMap;
-    omp_set_num_threads(Options::numThreads);
+    omp_set_num_threads(opt::numThreads);
     int reportPeriod = numContigs/100;
 
 
@@ -212,14 +211,13 @@ int main(int argc, char ** argv)
             cout << "Aligning contig " << i << " of " << numContigs << "\n";
 
         ContigMapData * pContigMap = contigVec[i];
-        int numFrags = pContigMap->numFrags_;
+        int numFrags = pContigMap->getNumFrags();
 
-        if(numFrags <= 2 && !Options::oneToOneMatch)
+        if(numFrags <= 2 && !opt::oneToOneMatch)
             continue;
 
-        MatchResultList resultList;
-        bool getOthers = true;
-        matchContigToOpticalMaps(pContigMap, opticalMapList, &resultList, getOthers, Options::localAlignment);
+        MatchResultPtrVec resultList;
+        matchContigToOpticalMaps(pContigMap, opticalMapList, &resultList, opt::localAlignment);
         sort(resultList.begin(), resultList.end(), resultScoreComp);
       
         if (resultList.size() > 0)
@@ -238,8 +236,8 @@ int main(int argc, char ** argv)
 
     // If the permutation test is on, run the permutation test for those
     // contigs that have a match
-    //runPermutationTests(&matchResultMap, opticalMapList, Options::numPermutationTrials);
-    runPermutationTests2(&matchResultMap, opticalMapList, contigVec, Options::numPermutationTrials);
+    //runPermutationTests(&matchResultMap, opticalMapList, opt::numPermutationTrials);
+    runPermutationTests2(&matchResultMap, opticalMapList, contigVec, opt::numPermutationTrials);
 
     vector<MatchResult *>::iterator resultListIter = allResults.begin();
     vector<MatchResult *>::iterator resultListEnd = allResults.end();
@@ -250,7 +248,7 @@ int main(int argc, char ** argv)
         pResult = *resultListIter;
         pResult->annotate();
         xmlWriterAll.writeAlignment(*pResult);
-        if( pResult->pval_ <= Options::pThreshold)
+        if( pResult->pval_ <= opt::pThreshold)
             xmlWriterSig.writeAlignment(*pResult);
         delete pResult; pResult = 0;
     }
@@ -297,7 +295,7 @@ void runPermutationTests(MatchResultMap * pMatchResultMap, const vector<OpticalM
     for(; oIter!=oIterEnd ; oIter++)
     {
         const OpticalMapData * pOpticalMap = *oIter;
-        const vector<FragData> * pFrags = &pOpticalMap->frags_;
+        const vector<FragData> * pFrags = &pOpticalMap->getFrags();
         opticalFrags.insert(opticalFrags.end(), pFrags->begin(), pFrags->end());
     }
 
@@ -312,8 +310,8 @@ void runPermutationTests(MatchResultMap * pMatchResultMap, const vector<OpticalM
         permutedOpticalMaps.push_back(pPermutedMap);
     }
 
-    AlignmentParams alignParams(0, Options::C_r_contig, Options::C_r_optical,
-                                Options::sdMax, Options::delta);  
+    AlignmentParams alignParams(0, opt::C_r_contig, opt::C_r_optical,
+                                opt::sdMax, opt::delta);  
 
     // Loop over the contigs. For each contig, perform trials for the permutation test. 
     MatchResultMap::iterator matchMapIter = pMatchResultMap->begin();
@@ -384,8 +382,9 @@ void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<Optical
     for(; i != e; i++)
     {
        const ContigMapData * pMap = *i;
-       vector<FragData>::const_iterator fragEnd = pMap->frags_.end();
-       vector<FragData>::const_iterator fragStart = pMap->frags_.begin();
+       const vector<FragData>& frags = pMap->getFrags();
+       vector<FragData>::const_iterator fragEnd = frags.end();
+       vector<FragData>::const_iterator fragStart = frags.begin();
        contigFrags.insert(contigFrags.end(), fragStart, fragEnd);
     }
     }
@@ -403,12 +402,12 @@ void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<Optical
     for(; matchMapIter != matchMapEnd; matchMapIter++)
     {
         const ContigMapData * pMap = matchMapIter->first;
-        fragNums.insert(pMap->frags_.size());
+        fragNums.insert(pMap->getNumFrags());
     }
     }
 
-    AlignmentParams alignParams(0, Options::C_r_contig, Options::C_r_optical,
-                                Options::sdMax, Options::delta);  
+    AlignmentParams alignParams(0, opt::C_r_contig, opt::C_r_optical,
+                                opt::sdMax, opt::delta);  
 
     typedef vector<double> FloatVec; 
     typedef map<int, FloatVec> PermutationScoreMap;
@@ -472,7 +471,7 @@ void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<Optical
     {
 
         const ContigMapData * pMap = matchMapIter->first;
-        int numFrags = pMap->frags_.size();
+        int numFrags = pMap->getNumFrags();
 
         PermutationScoreMap::iterator pIter = permutationScoreMap.find(numFrags);
         assert(pIter != permutationScoreMap.end());
@@ -501,28 +500,27 @@ void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<Optical
     cout << "DONE." << endl;
 }
 // Run the match pipeline for a single contig to all of the optical maps
-// If getAllMatches is true, add all matches to pResults. Otherwise, only add the best match to pResults.
 void matchContigToOpticalMaps(const ContigMapData * pContigMap, const vector<OpticalMapData *>& opticalMapList,
-                              vector<MatchResult *> * const pResults, bool getAllMatches, bool localAlignment)
+                              vector<MatchResult *> * const pResults, bool localAlignment)
 {
     pResults->clear();
 
-    int numContigFrags = pContigMap->frags_.size();
-    if (numContigFrags <= 2 && !Options::oneToOneMatch) return;
+    int numContigFrags = pContigMap->getNumFrags();
+    if (numContigFrags <= 2 && !opt::oneToOneMatch) return;
     int numOpticalMaps = opticalMapList.size();
 
     // Maximum number of missed restriction sites allowed for the contig
-    double C_sigma = Options::sdMin;
+    double C_sigma = opt::sdMin;
    
     // Call dynampic programming algorithm to make match
-    vector<MatchResult *> allMatches; // vector of all match results (including the best match)
-    allMatches.reserve(1024);
-    vector<MatchResult *> * pAllMatches = getAllMatches ? &allMatches : 0; // if 0, then match() will only return the best match
+    vector<MatchResult *> matches; // vector of all match results (including the best match)
+    matches.reserve(1024);
+    vector<MatchResult *> * pMatches = &matches;
     MatchResult * pResult = 0;
     MatchResult * pRevResult = 0;
 
     typedef MatchResult* (*MatchFunc)(const ContigMapData * pContigMap, const OpticalMapData * pOpticalMap,
-                     vector<MatchResult *> * pAllMatches, bool forward, const AlignmentParams& alignParams);
+                     vector<MatchResult *> * pMatches, bool forward, const AlignmentParams& alignParams);
 
     MatchFunc matchFunc = localAlignment ? matchLocal : match;
 
@@ -533,25 +531,21 @@ void matchContigToOpticalMaps(const ContigMapData * pContigMap, const vector<Opt
         OpticalMapData * pOpticalMap = opticalMapList[i];
 
         // Course-grained search for alignment, relaxing the standard devation restriction
-        C_sigma = Options::sdMin;
-        while (C_sigma <= Options::sdMax)
+        C_sigma = opt::sdMin;
+        while (C_sigma <= opt::sdMax)
         {
-            AlignmentParams alignParams(0, Options::C_r_contig, Options::C_r_optical,
-                                        C_sigma, Options::delta);  
+            AlignmentParams alignParams(0, opt::C_r_contig, opt::C_r_optical,
+                                        C_sigma, opt::delta);  
 
             // Match in the forward direction
             bool forward = true;
-            pResult = matchFunc(pContigMap, pOpticalMap, pAllMatches, forward, alignParams);
-            if (pResult && !pAllMatches)
-                allMatches.push_back(pResult);
+            pResult = matchFunc(pContigMap, pOpticalMap, pMatches, forward, alignParams);
 
-            if (!Options::noReverse)
+            if (!opt::noReverse)
             {
                 // Match in the reverse direction
                 forward = false;
-                pRevResult = matchFunc(pContigMap, pOpticalMap, pAllMatches, forward, alignParams);
-                if (pRevResult && !pAllMatches)
-                    allMatches.push_back(pRevResult);
+                pRevResult = matchFunc(pContigMap, pOpticalMap, pMatches, forward, alignParams);
             }
 
             if( pResult || pRevResult)
@@ -559,166 +553,26 @@ void matchContigToOpticalMaps(const ContigMapData * pContigMap, const vector<Opt
 
             C_sigma += 1;
         }
-
     } // end for loop over optical maps
 
+    if (matches.empty()) return;
+
     // sort MatchResults by score in descending order
-    sort(allMatches.begin(), allMatches.end(), MatchResult::compareScore);
-    reverse(allMatches.begin(), allMatches.end());
+    sort(matches.begin(), matches.end(), MatchResult::compareScore);
+    reverse(matches.begin(), matches.end());
 
-
-    if (getAllMatches)
-    {
-        // Place the filtered results into pResults vector
-        #if DEBUG_MATCH > 0
-        std::cout << "Num. matches before filter: " << allMatches.size() << std::endl;
-        #endif
-
-        filterResults(allMatches);
-
-        #if DEBUG_MATCH > 0
-        std::cout << "Num. matches after filter: " << allMatches.size() << std::endl;
-        #endif
-
-        pResults->insert(pResults->end(), allMatches.begin(), allMatches.end());
-        allMatches.clear();
-    }
+    // Only take the top opt::maxMatchesPerContig results;
+    MatchResultPtrVec::iterator B = matches.begin();
+    MatchResultPtrVec::iterator E = matches.end();
+    MatchResultPtrVec::iterator E1;
+    if (opt::maxMatchesPerContig > 0 && matches.size() > (size_t) opt::maxMatchesPerContig)
+        E1 = matches.begin() + opt::maxMatchesPerContig;
     else
-    {
-        // Place only the best result into pResults vector if it passes the filter.
-        vector<MatchResult *>::iterator it, ite;
-        it = allMatches.begin();
-        ite = allMatches.end();
-        if (it != ite)
-        {
-            bool passFilter = filterFunction(*it);
-            if (passFilter)
-            {
-                pResults->push_back(*it); // Add the first (best scoring) MatchResult
-                it++;
-            }
-        }
-        // Delete the rest
-        for (; it != ite; it++)
-            delete *it;
-        allMatches.clear();
-    }
-}
+        E1 = matches.end();
 
+    pResults->insert(pResults->end(), B, E1);
 
-// Return true if MatchResult is acceptable
-bool filterFunction(MatchResult * pResult)
-{
-    // Build additional attributes for this alignment candidate, and see if it
-    // passes the thresholds
-    pResult->buildAlignmentAttributes();
-   
-    //Chi2 Filter
-    bool failChi2Filter = false;
-    if (pResult->numAlignedInnerBlocks_ > 0)
-        failChi2Filter = (pResult->chi2_/((double) pResult->numAlignedInnerBlocks_)) > Options::avgChi2Threshold;
-       
-    bool failLengthRatio = pResult->alignedLengthRatio_ < Options::minLengthRatio;
-    bool failContigMissRate = pResult->contigMissRate_ > Options::maxMissRateContig;
-    bool failContigHitsCheck = pResult->contigHits_ <= 0;
-
-    bool fail = (failChi2Filter || 
-                 failLengthRatio ||
-                 failContigMissRate ||
-                 failContigHitsCheck);
-
-    #if DEBUG_FILTER > 0
-    std::cout << "MatchResult: " << *pResult << "\nt"
-              << "FailChi2: " << failChi2Filter
-              << " FailLengthRatio: " << failLengthRatio
-              << " FailContigMissRate: " << failContigMissRate
-              << " FailContigHitsCheck: " << failContigHitsCheck
-              << std::endl;
-    #endif
-
-    //return true;
-    return (!fail);
-}
-
-// Filter results by:
-// - thresholding on the alignment length ratio
-// - selecting non-overlapping matches
-// Delete any MatchResults's that are filtered out
-// NOTE: the results should be sorted by score in descending order BEFORE
-//       calling this function
-void filterResults(vector<MatchResult *>& results)
-{
-    if (results.size()==0)
-        return;
-
-    vector<MatchResult *> filteredResults;
-    vector<MatchResult *>::iterator it, itb, ite;
-    vector<MatchResult *>::const_iterator frit, frb, fre;
-    const MatchResult * pfr;
-    MatchResult * pResult;
-    bool hasOverlap;
-
-
-    // Add results to filteredResults in descending order of score, provided
-    // that each MatchResult satisfies the length ratio and miss rate criteria
-    itb = results.begin();
-    ite = results.end();
-    int numAdded = 0;
-    double lastScore = (*itb)->score_+1;
-    for(it = itb;
-       (it != ite) && numAdded < Options::maxMatchesPerContig;
-       it++)
-    {
-        pResult = *it;
-
-        // Check that scores are sorted properly
-        assert (lastScore >= pResult->score_);
-        lastScore = pResult->score_;
-
-        // Check for overlap with a higher scoring MatchResult
-        hasOverlap = false;
-        frb = filteredResults.begin();
-        fre = filteredResults.end();
-        for (frit = frb; frit != fre; frit++)
-        {
-            pfr = *frit;
-            if (pResult->overlaps(pfr))
-            {
-                hasOverlap = true;
-                break;
-            }
-        }
-
-        if (hasOverlap)
-        {
-            #if DEBUG_FILTER > 0
-            std::cout << "Match overlaps a previous match:\n" << *pResult << std::endl;
-            #endif
-            delete pResult;
-            continue;
-        }
-        else
-        {
-            bool passFilter = filterFunction(pResult); 
-            if (!passFilter)
-            {
-                #if DEBUG_FILTER > 0
-                std::cout << "Match does not pass filter:\n" << *pResult << std::endl;
-                #endif
-                delete pResult;
-                continue;
-            }
-            else
-            {
-                filteredResults.push_back(pResult);
-                numAdded++;
-            }
-        }
-    }
-
-    // Cleanup the rest
-    for(; it != ite; it++)
+    for (MatchResultPtrVec::iterator it = E1; it != E; it++)
         delete *it;
-
-    results = filteredResults;
+    matches.clear();
 }

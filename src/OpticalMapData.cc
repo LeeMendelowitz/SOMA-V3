@@ -10,18 +10,18 @@ using namespace std;
 // Default Constructor
 OpticalMapData::OpticalMapData() :
     MapData(""),
-    numFrags_(0), isCircular_(false), frags_(vector<FragData>())
-    {
-        reverseFrags_ = frags_;
-        reverse(reverseFrags_.begin(), reverseFrags_.end());
-    };
+    numFrags_(0),
+    isCircular_(false)
+    { };
 
 // Constructor
 OpticalMapData::OpticalMapData(int numFrags, const string& opticalId, bool isCircular, const vector<FragData>& frags) :
     MapData(opticalId),
-    numFrags_(numFrags), isCircular_(isCircular), frags_(frags)
+    frags_(frags),
+    numFrags_(numFrags),
+    isCircular_(isCircular)
 {
-    calcFragStartEnd();
+    calcFragBoundaries();
     if (isCircular_) makeCircular();
     reverseFrags_ = frags_;
     reverse(reverseFrags_.begin(), reverseFrags_.end());
@@ -30,13 +30,14 @@ OpticalMapData::OpticalMapData(int numFrags, const string& opticalId, bool isCir
 //Constructor (from file)
 OpticalMapData::OpticalMapData(const string& mapFile, bool isCircular) :
     MapData(mapFile),
-    numFrags_(0), isCircular_(isCircular) 
+    numFrags_(0),
+    isCircular_(isCircular) 
 {
     readFile(mapFile);
     numFrags_ = frags_.size(); //Number of original fragments (before made circular)
     frags_[0].firstOrLastFrag_ = true;
     frags_[numFrags_-1].firstOrLastFrag_ = true;
-    calcFragStartEnd();
+    calcFragBoundaries();
     if (isCircular_) makeCircular();
     reverseFrags_ = frags_;
     reverse(reverseFrags_.begin(), reverseFrags_.end());
@@ -80,23 +81,16 @@ void OpticalMapData::readFile(const string& mapFile)
 }
 // Calculate the starting and ending position of each optical fragment (in bp)
 // within the optical map
-void OpticalMapData::calcFragStartEnd()
+void OpticalMapData::calcFragBoundaries()
 {
     const size_t N = frags_.size();
-    fragStartBp_ = vector<int>(N, 0);
-    fragEndBp_ = vector<int>(N, 0);
+    fragBoundaryBp_ = vector<int>(N+1, 0);
     int curPos = 0;
-    // Set the start for the first fragment
-    fragStartBp_[0] = 0;
-    for(size_t i = 1; i < N-1; i++)
+    for (size_t i = 0; i < N; i++)
     {
-        curPos += frags_[i-1].size_;
-        fragEndBp_[i-1] = curPos;
-        fragStartBp_[i] = curPos;
+        curPos += frags_[i].size_;
+        fragBoundaryBp_[i+1] = curPos;
     }
-    // Set the end for the last fragment
-    curPos += frags_[N-1].size_;
-    fragEndBp_[N-1] = curPos;
 }
 
 void OpticalMapData::makeCircular()
