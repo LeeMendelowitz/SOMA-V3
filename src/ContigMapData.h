@@ -38,8 +38,7 @@ class ContigMapData : public MapData
             return fragBoundaryBp_[ind];
 
         // Contig is reverse, get the boundary position counting from the right
-        size_t last = fragBoundaryBp_.size() - 1;
-        size_t myInd = last - ind;
+        size_t last = fragBoundaryBp_.size() - 1; size_t myInd = last - ind;
         return fragBoundaryBp_[myInd];
     }
 
@@ -60,13 +59,15 @@ class ContigMapData : public MapData
 
     size_t getNumFrags() const { return frags_.size(); }
 
+    int getLength() const { return length_; }
 
-    int length_; // The number of bases in contig
+
 
     private:
     vector<int> fragBoundaryBp_; // indices of the boundaries for each contig fragment
     vector<FragData> frags_;
     vector<FragData> reverseFrags_; // reverse of frags_
+    int length_; // length in bp
 
     // Filter out any silico fragments of zero size
     void computeFragsFromSites(const vector<SiteData>& sites);

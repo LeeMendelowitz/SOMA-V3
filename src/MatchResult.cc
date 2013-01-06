@@ -19,7 +19,7 @@ ostream& operator<<(ostream& os, const MatchResult& mr)
 {
     os << mr.contigId_ << " "
        << mr.chromosomeId_ << " "
-       << mr.contigSize_ << " "
+       << mr.contigLength_ << " "
        << mr.forward_ << " "
        << mr.opStartIndex_ << " "
        << mr.opEndIndex_ << " "
@@ -36,7 +36,6 @@ void MatchResult::buildAlignmentAttributes()
 
     if (matchedChunkList_.empty()) return;
 
-    contigSize_ = 0;
     contigUnalignedFrags_ = 0;
     opticalMisses_ = 0;
     contigMisses_ = 0;
@@ -73,8 +72,6 @@ void MatchResult::buildAlignmentAttributes()
     for (ChunkIter mi = mb; mi != me; mi++)
     {
         bool firstAlignment = (mi == mb);
-
-        contigSize_ += mi->cLength_;
 
         if (mi->contigGap_)
         {
@@ -118,7 +115,7 @@ void MatchResult::buildAlignmentAttributes()
     opticalMissRate_ = (opticalMisses_ == 0) ? 0.0 : 1.0*opticalMisses_/(opticalHits_ + opticalMisses_);
     alignedLengthRatio_ = 1.0*min(contigInnerAlignedBases_, opticalInnerAlignedBases_) /
                               max(contigInnerAlignedBases_, opticalInnerAlignedBases_);
-    contigUnalignedBaseRatio_ = 1.0*contigUnalignedBases_/contigSize_;
+    contigUnalignedBaseRatio_ = 1.0*contigUnalignedBases_/contigLength_;
 
 }
 
@@ -204,7 +201,6 @@ void MatchResult::reset()
 
     // Contig information
     contigId_.clear();
-    contigSize_ = 0;
 
     // Alignment location & orientation
     chromosomeId_.clear();

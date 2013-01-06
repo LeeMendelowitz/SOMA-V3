@@ -3,38 +3,23 @@
 
 #include <algorithm>
 #include <iostream>
+#include <set>
+
+#include "debugUtils.h"
 
 #define MATCHBUILDER_DEBUG 0
+#define FILTER_DEBUG 0
 
 using namespace std;
 
-
-// Return true of the match result has an overlap with another match result in the iterator range from B to E.
-bool hasOverlap(const MatchResult* pMatch, MatchResultPtrVec::const_iterator B, MatchResultPtrVec::const_iterator E)
-{
-    bool hasOverlap = false;
-    for(MatchResultPtrVec::const_iterator iter = B;
-        iter != E;
-        iter++)
-    {
-        if (pMatch->overlaps(*iter))
-        {
-            hasOverlap = true;
-            break;
-        }
-    }
-    return hasOverlap;
-}
-
-bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResultPtrVec& matches,
+// The ScoreMatrix for local alignment is filled with entries with scores of zero or greater
+bool LocalMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResultPtrVec& matches,
                                      const MapData * pOpticalMap, const MapData * pContigMap, bool contigIsForward)
 {
 
     matches.clear();
     const int m = pScoreMatrix->m_; // num rows
     const int n = pScoreMatrix->n_; // num cols
-    const int lr = m-1;
-    const int lro = lr*n;
     const ScoreElement_t * pE;
     bool foundMatch = false;
 
@@ -42,14 +27,16 @@ bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchRe
     typedef std::vector<ScoreIndexPair> ScoreIndexPairVec;
     ScoreIndexPairVec trailSeeds;
 
-    // Check the last row in the dynamic programming table
-    // for potential matches
-    for(int j=1; j < n; j++)
+    // Check the entire ScoreMatrix for potential matches
+    // These are cells with a positive score
+    for (int i=1; i < m; i++)
     {
-        pE = &pScoreMatrix->d_[lro + j];
-        if (pE->score_ > -Constants::INF)
+        const int ro = n*i;
+        for(int j=1; j < n; j++)
         {
-            trailSeeds.push_back(ScoreIndexPair( pE->score_, Index_t(lr,j) ) );
+            pE = &pScoreMatrix->d_[ro + j];
+            if (pE->score_ > 0.0)
+                trailSeeds.push_back(ScoreIndexPair( pE->score_, Index_t(i,j) ) );
         }
     }
 
@@ -59,6 +46,9 @@ bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchRe
     sort(trailSeeds.begin(), trailSeeds.end());
     reverse(trailSeeds.begin(), trailSeeds.end());
 
+    // Keep track of which cells of the ScoreMatrix have already been used to build matches.
+    set<Index_t> usedCells;
+
     const ScoreIndexPairVec::const_iterator E = trailSeeds.end();
     for( ScoreIndexPairVec::const_iterator iter = trailSeeds.begin();
          iter != E;
@@ -66,29 +56,23 @@ bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchRe
     {
         if ((maxMatches_ >= 0) && matches.size() == (size_t) maxMatches_) break;
         Index_t end_index = iter->second;
-        MatchResult * pMatch = buildMatch(end_index, pScoreMatrix, pOpticalMap, pContigMap, contigIsForward);
+        MatchResult * pMatch = buildMatch(end_index, pScoreMatrix, pOpticalMap, pContigMap, contigIsForward, usedCells);
         if (pMatch == NULL) continue;
-
-        // Check that the match is acceptable. A match is OK if:
-        // 1. It passes the filter funtion.
-        // 2. It does not overlap a high scoring match result.
-        bool matchOK = filterFunction(pMatch);
-        matchOK = matchOK && !hasOverlap(pMatch, matches.begin(), matches.end());
-        if (!matchOK)
-            delete pMatch;
-        else
-        {
-            matches.push_back(pMatch);
-            foundMatch = true;
-        }
+        matches.push_back(pMatch);
+        foundMatch = true;
     }
 
     return foundMatch;
 }
 
 
-MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
-                                             const MapData * pContigMap, bool contigIsForward)
+// Build a Local Alignment.
+// Check that this alignment does not use any cells in the ScoreMatrix that
+// have already been used in a higher scoring alignment.
+// If the Match is not acceptable, return NULL
+MatchResult * LocalMatchMaker::buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
+                                          const MapData * pContigMap, bool contigIsForward,
+                                          set<Index_t>& usedCells)
 {
 
     const vector<FragData>& contigFrags = pContigMap->getFrags(contigIsForward);
@@ -97,6 +81,14 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
     double score = pScoreMatrix->d_[n*end_index.first + end_index.second].score_;
 
     // Build the trail through scoreMatrix
+    #if MATCHBUILDER_DEBUG > 0
+    {
+    ScoreElement_t * pE = &(pScoreMatrix->d_[n*end_index.first + end_index.second]);
+    std::cout << "Building trail from element: "
+              << pE
+              << std::endl;
+    }
+    #endif
     vector<Index_t> trail;
     trail.reserve(pScoreMatrix->m_);
     Index_t ind = end_index;
@@ -107,6 +99,17 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
         ind = make_pair(pE->pi_, pE->pj_);
         if ((ind.first < 0) || (ind.second < 0) )
             break;
+
+        #if MATCHBUILDER_DEBUG > 0
+        {
+        ScoreElement_t * pE = &(pScoreMatrix->d_[n*ind.first + ind.second]);
+        std::cout << "Adding element to trail: "
+                  << pE
+                  << std::endl;
+        }
+        #endif
+
+
         trail.push_back(ind);
     }
     reverse(trail.begin(), trail.end());
@@ -114,14 +117,38 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
     const vector<Index_t>::iterator tb = trail.begin();
     const vector<Index_t>::iterator te = trail.end();
 
-    MatchResult * pMatch = new MatchResult(pContigMap->getId(), pOpticalMap->getId(), contigIsForward, score);
+    //////////////////////////////////////
+    // If any of the cells have already been used, do not build a Match.
+    bool allCellsUnused = true;
+    for (vector<Index_t>::iterator iter = tb;
+         iter != te;
+         iter++)
+    {
+        if (usedCells.count(*iter) > 0)
+        {
+            allCellsUnused = false;
+            break;
+        }
+    }
+
+    if (!allCellsUnused)
+    {
+        // The MatchResult for this trail should not be built since it uses cells that were
+        // already used in a previous MatchResult.
+        return NULL;
+    }
+    /////////////////////////////////////
+
+    MatchResult * pMatch = new MatchResult(pContigMap->getId(), pOpticalMap->getId(), 
+                                           pContigMap->getLength(), contigIsForward, score);
 
     #if MATCHBUILDER_DEBUG > 0
     std::cout << "Building match for: "
               << pContigMap->getId() << " "
               << pOpticalMap->getId() << " "
               << "forward: " << contigIsForward
-              << "end_index: " << end_index.first << " , " << end_index.second
+              << " end_index: " << end_index.first << " , " << end_index.second
+              << " trailSize: " << trail.size()
               << std::endl;
     # endif
 
@@ -230,28 +257,38 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
 
     pMatch->buildAlignmentAttributes();
 
+    bool matchOK = filterFunction(pMatch);
+    if (!matchOK)
+    {
+        delete pMatch;
+        pMatch = NULL;
+        return NULL;
+    }
+
+    // Mark the cells in the trail for the MatchResult as used.
+    usedCells.insert(tb, te);
     return pMatch;
 }
 
 // Return true if MatchResult is acceptable
-bool StandardMatchMaker::filterFunction(const MatchResult * pResult)
+bool LocalMatchMaker::filterFunction(const MatchResult * pResult)
 {
 
     //Chi2 Filter
     bool failChi2Filter = false;
     if (pResult->numAlignedInnerBlocks_ > 0)
-        failChi2Filter = (pResult->chi2_/((double) pResult->numAlignedInnerBlocks_)) > opt::avgChi2Threshold;
+        failChi2Filter = (pResult->chi2_/((double) pResult->numAlignedInnerBlocks_)) > avgChi2Threshold_;
        
-    bool failLengthRatio = pResult->alignedLengthRatio_ < opt::minLengthRatio;
-    bool failContigMissRate = pResult->contigMissRate_ > opt::maxMissRateContig;
-    bool failContigHitsCheck = pResult->contigHits_ <= 0;
+    bool failLengthRatio = pResult->alignedLengthRatio_ < minLengthRatio_;
+    bool failContigMissRate = pResult->contigMissRate_ > maxMissRateContig_;
+    bool failContigHitsCheck = (size_t) pResult->contigHits_ < minContigHits_;
 
     bool fail = (failChi2Filter || 
                  failLengthRatio ||
                  failContigMissRate ||
                  failContigHitsCheck);
 
-    #if DEBUG_FILTER > 0
+    #if FILTER_DEBUG > 0
     std::cout << "MatchResult: " << *pResult << "\nt"
               << "FailChi2: " << failChi2Filter
               << " FailLengthRatio: " << failLengthRatio
@@ -260,89 +297,5 @@ bool StandardMatchMaker::filterFunction(const MatchResult * pResult)
               << std::endl;
     #endif
 
-    //return true;
     return (!fail);
-}
-
-// Filter results by:
-// - thresholding on the alignment length ratio
-// - selecting non-overlapping matches
-// Delete any MatchResults's that are filtered out
-// NOTE: the results should be sorted by score in descending order BEFORE
-//       calling this function
-void StandardMatchMaker::filterResults(MatchResultPtrVec& results)
-{
-    if (results.size()==0)
-        return;
-
-    vector<MatchResult *> filteredResults;
-    vector<MatchResult *>::iterator it, itb, ite;
-    vector<MatchResult *>::const_iterator frit, frb, fre;
-    const MatchResult * pfr;
-    MatchResult * pResult;
-    bool hasOverlap;
-
-
-    // Add results to filteredResults in descending order of score, provided
-    // that each MatchResult satisfies the length ratio and miss rate criteria
-    itb = results.begin();
-    ite = results.end();
-    int numAdded = 0;
-    double lastScore = (*itb)->score_+1;
-    for(it = itb;
-       (it != ite) && numAdded < opt::maxMatchesPerContig;
-       it++)
-    {
-        pResult = *it;
-
-        // Check that scores are sorted properly
-        assert (lastScore >= pResult->score_);
-        lastScore = pResult->score_;
-
-        // Check for overlap with a higher scoring MatchResult
-        hasOverlap = false;
-        frb = filteredResults.begin();
-        fre = filteredResults.end();
-        for (frit = frb; frit != fre; frit++)
-        {
-            pfr = *frit;
-            if (pResult->overlaps(pfr))
-            {
-                hasOverlap = true;
-                break;
-            }
-        }
-
-        if (hasOverlap)
-        {
-            #if DEBUG_FILTER > 0
-            std::cout << "Match overlaps a previous match:\n" << *pResult << std::endl;
-            #endif
-            delete pResult;
-            continue;
-        }
-        else
-        {
-            bool passFilter = filterFunction(pResult); 
-            if (!passFilter)
-            {
-                #if DEBUG_FILTER > 0
-                std::cout << "Match does not pass filter:\n" << *pResult << std::endl;
-                #endif
-                delete pResult;
-                continue;
-            }
-            else
-            {
-                filteredResults.push_back(pResult);
-                numAdded++;
-            }
-        }
-    }
-
-    // Cleanup the rest
-    for(; it != ite; it++)
-        delete *it;
-
-    results.swap(filteredResults); 
 }

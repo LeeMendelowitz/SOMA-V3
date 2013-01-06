@@ -58,12 +58,15 @@ class OpticalMapData : public MapData
 
     bool isCircular() const {return isCircular_;}
 
+    int getLength() const { return length_; }
+
     private:
     vector<int> fragBoundaryBp_; // The boundaries (in bp) of the restriction fragments in map
     vector<FragData> frags_; // vector of fragments (doubled if circular)
     vector<FragData> reverseFrags_;
     int numFrags_; // Number of fragments in map (without circular trick!)
     bool isCircular_;
+    int length_; // Length of the map, in bp
 
     // Calculate the starting and ending position of each optical fragment (in bp)
     // within the optical map

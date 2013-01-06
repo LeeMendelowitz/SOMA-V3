@@ -127,7 +127,6 @@ void ArgParser::printArgs()
   //            << "maxGapSize: " << opt::maxGapSize << "\n"
               << "pThreshold: " << opt::pThreshold << "\n"
               << "outputPrefix: " << opt::outputPrefix << "\n"
-              //<< "C_s: " << opt::C_s << "\n"
               << "C_r_contig: " << opt::C_r_contig << "\n"
               << "C_r_optical: " << opt::C_r_optical << "\n"
    //           << "falseCutRate: " << opt::falseCutRate << "\n"

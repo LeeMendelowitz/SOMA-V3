@@ -66,7 +66,7 @@ void XMLWriter::writeAlignment(const MatchResult& mr)
     // Contig data
     xml_node contigNode = matchResultNode.append_child("contig"); 
     contigNode.append_child("name").append_child(node_pcdata).set_value(mr.contigId_.c_str());
-    contigNode.append_child("size").append_child(node_pcdata).set_value(toCStr(mr.contigSize_));
+    contigNode.append_child("length").append_child(node_pcdata).set_value(toCStr(mr.contigLength_));
 
     // Optical Map
     matchResultNode.append_child("chromosome").append_child(node_pcdata).set_value(mr.chromosomeId_.c_str());
@@ -80,10 +80,12 @@ void XMLWriter::writeAlignment(const MatchResult& mr)
     matchResultNode.append_child("cEndIndex").append_child(node_pcdata).set_value(toCStr(mr.cEndIndex_));
     matchResultNode.append_child("cStartBp").append_child(node_pcdata).set_value(toCStr(mr.cStartBp_));
     matchResultNode.append_child("cEndBp").append_child(node_pcdata).set_value(toCStr(mr.cEndBp_));
+    matchResultNode.append_child("cAlignedBases").append_child(node_pcdata).set_value(toCStr(mr.contigTotalAlignedBases_));
     matchResultNode.append_child("opStartIndex").append_child(node_pcdata).set_value(toCStr(mr.opStartIndex_));
     matchResultNode.append_child("opEndIndex").append_child(node_pcdata).set_value(toCStr(mr.opEndIndex_));
     matchResultNode.append_child("opStartBp").append_child(node_pcdata).set_value(toCStr(mr.opStartBp_));
     matchResultNode.append_child("opEndBp").append_child(node_pcdata).set_value(toCStr(mr.opEndBp_));
+    matchResultNode.append_child("opAlignedBases").append_child(node_pcdata).set_value(toCStr(mr.opticalTotalAlignedBases_));
     matchResultNode.append_child("totalHits").append_child(node_pcdata).set_value(toCStr(mr.totalHits_));
     matchResultNode.append_child("totalMisses").append_child(node_pcdata).set_value(toCStr(mr.totalMisses_));
     matchResultNode.append_child("totalMissRate").append_child(node_pcdata).set_value(toCStr(mr.totalMissRate_));

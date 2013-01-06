@@ -11,7 +11,8 @@ using namespace std;
 OpticalMapData::OpticalMapData() :
     MapData(""),
     numFrags_(0),
-    isCircular_(false)
+    isCircular_(false),
+    length_(0)
     { };
 
 // Constructor
@@ -31,7 +32,8 @@ OpticalMapData::OpticalMapData(int numFrags, const string& opticalId, bool isCir
 OpticalMapData::OpticalMapData(const string& mapFile, bool isCircular) :
     MapData(mapFile),
     numFrags_(0),
-    isCircular_(isCircular) 
+    isCircular_(isCircular),
+    length_(0)
 {
     readFile(mapFile);
     numFrags_ = frags_.size(); //Number of original fragments (before made circular)
@@ -91,6 +93,7 @@ void OpticalMapData::calcFragBoundaries()
         curPos += frags_[i].size_;
         fragBoundaryBp_[i+1] = curPos;
     }
+    length_ = curPos;
 }
 
 void OpticalMapData::makeCircular()

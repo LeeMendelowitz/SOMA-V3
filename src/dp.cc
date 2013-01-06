@@ -14,7 +14,7 @@
 #include "dp.h"
 #include "MatchResult.h"
 #include "debugUtils.h"
-#include "localAlignmentScore.h"
+#include "scoringFunctions.h"
 #include "MatchMakers.h"
 
 #define DEBUG_MATRIX 0
@@ -23,107 +23,6 @@
 
 using namespace std;
 
-// Penalty for "losing" a small contig fragment.
-// (gapped alignment)
-double gapPenalty(int fragSize)
-{
-    if (fragSize < opt::smallFrag)
-        return -fragSize * opt::smallFragSlope;
-    else
-        return -Constants::INF;
-}
-
-// Penalty for missing a contig restriction site
-double contigMissedSitePenalty(int dToClosestSite)
-{
-    if (dToClosestSite > opt::smallFrag)
-        return -opt::C_r_contig;
-    else
-    {   
-        // Add a small amount to the penalty to break ties with the gapPenalty
-        // in boundary fragments where there is no sizing error
-        return (gapPenalty(dToClosestSite) + 1.0E-6);
-    }
-}
-
-
-// nContigSites: number of unaligned contig sites
-// nOpticalSites: number of unaligned optical sites
-double scoringFunction(int nContigSites, int nOpticalSites,
-                       int contigLength, int opticalLength,
-                       bool boundaryFrag)
-{
-    // Model assumes that Optical Frag ~ N(C, SIGMA^2*C) where C is contig frag size 
-
-    double chi2;
-    
-    if (boundaryFrag && contigLength < opticalLength)
-        chi2 = 0.0; // Do not penalize boundary fragments for being too small
-    else
-    {
-        double var = contigLength*Constants::SIGMA2;
-        double dl = (contigLength-opticalLength);
-        chi2 = dl*dl/var;
-        assert (chi2 >= -1E-12);
-        // Only allow opt::sdMax standard deviations in sizing error
-        if (chi2 > opt::sdMax*opt::sdMax)
-            return -Constants::INF;
-    }
-    return -(nContigSites*opt::C_r_contig +
-           nOpticalSites*opt::C_r_optical +
-           chi2);
-}
-
-
-// Scoring function which accounts for the distance to the closest
-// aligned site for each unaligned interior site.
-double scoringFunction2( const vector<FragData>::const_iterator& cB,
-                         const vector<FragData>::const_iterator& cE,
-                         const vector<FragData>::const_iterator& oB,
-                         const vector<FragData>::const_iterator& oE,
-                         bool boundaryFrag )
-{
-    vector<FragData>::const_iterator ci, oi;
-
-    // Calculate total contig and optical block length
-    int contigLength = 0;
-    for (ci = cB; ci != cE; ci++)
-        contigLength += ci->size_;
-
-    int opticalLength = 0;
-    for (oi = oB; oi != oE; oi++)
-        opticalLength += oi->size_;
-
-    // Compute sizing error
-    double chi2 = 0.0;
-    if (boundaryFrag && contigLength < opticalLength)
-        chi2 = 0.0; // Do not penalize boundary fragments for being too small
-    else
-    {
-        double var = contigLength*Constants::SIGMA2;
-        double dl = (contigLength-opticalLength);
-        chi2 = dl*dl/var;
-        assert (chi2 >= -1E-12);
-        // Only allow opt::sdMax standard deviations in sizing error
-        if (chi2 > opt::sdMax*opt::sdMax)
-            return -Constants::INF;
-    }
-    chi2 = -1.0*chi2;
-
-    // Compute miss penalty
-    double contigMissScore = 0.0;
-    int numOpticalFrags = oE - oB;
-    double opticalMissScore = -opt::C_r_optical*(numOpticalFrags-1);
-    int pos = 0;
-    for(ci = cB; ci != cE-1; ci++)
-    {
-        pos += ci->size_;
-        // The miss score is a function of the distance to the first missed site
-        contigMissScore += contigMissedSitePenalty(min(pos, contigLength-pos));
-    }
-
-    return (contigMissScore + opticalMissScore + chi2);
-}
 
 
 
@@ -169,7 +68,7 @@ ScoreMatrix_t * createScoreMatrix1(const vector<FragData>& contigFrags, const ve
         pCur -> pi_ = i-1;
         pCur -> pj_ = 0;
         // Calc score for gapped alignment
-        pCur -> score_ = pPrev -> score_ + gapPenalty(contigFrags[i-1].size_);
+        pCur -> score_ = pPrev -> score_ + gapPenalty(contigFrags[i-1].size_, alignParams);
     }
 
     // Initialze rest of table
@@ -210,7 +109,7 @@ ScoreMatrix_t * createScoreMatrix1(const vector<FragData>& contigFrags, const ve
                     {
                         nSitesContig = i-k-1;
                         nSitesOptical = j-l-1; 
-                        newScore = pPrev->score_ +  scoringFunction(nSitesContig, nSitesOptical, cFragLength, oFragLength, boundaryFrag);
+                        newScore = pPrev->score_ +  scoringFunction(nSitesContig, nSitesOptical, cFragLength, oFragLength, boundaryFrag, alignParams);
                         if (newScore > pCur->score_)
                         {
                             pCur->score_ = newScore;
@@ -225,7 +124,7 @@ ScoreMatrix_t * createScoreMatrix1(const vector<FragData>& contigFrags, const ve
             pPrev = &pScoreMatrix->d_[(i-1)*n+j];
             if (pPrev->score_ > -Constants::INF)
             {
-                newScore = pPrev->score_ + gapPenalty(cFrag);
+                newScore = pPrev->score_ + gapPenalty(cFrag, alignParams);
                 if (newScore > pCur->score_)
                 {
                     pCur->score_ = newScore;
@@ -271,7 +170,7 @@ ScoreMatrix_t * createScoreMatrix2(const vector<FragData>& contigFrags, const ve
         pCur -> pi_ = i-1;
         pCur -> pj_ = 0;
         // Calc score for gapped alignment
-        pCur -> score_ = pPrev -> score_ + gapPenalty(contigFrags[i-1].size_);
+        pCur -> score_ = pPrev -> score_ + gapPenalty(contigFrags[i-1].size_, alignParams);
     }
 
     // Initialze rest of table
@@ -312,7 +211,7 @@ ScoreMatrix_t * createScoreMatrix2(const vector<FragData>& contigFrags, const ve
                     pPrev = &pScoreMatrix->d_[k*n+l];
                     if (pPrev->score_ > -Constants::INF)
                     {
-                        newScore = pPrev->score_ + scoringFunction2(cbB, cbE, obB, obE, boundaryFrag);
+                        newScore = pPrev->score_ + scoringFunction2(cbB, cbE, obB, obE, boundaryFrag, alignParams);
                         if (newScore > pCur->score_)
                         {
                             pCur->score_ = newScore;
@@ -327,7 +226,7 @@ ScoreMatrix_t * createScoreMatrix2(const vector<FragData>& contigFrags, const ve
             pPrev = &pScoreMatrix->d_[(i-1)*n+j];
             if (pPrev->score_ > -Constants::INF)
             {
-                newScore = pPrev->score_ + gapPenalty(cFragSize);
+                newScore = pPrev->score_ + gapPenalty(cFragSize, alignParams);
                 if (newScore > pCur->score_)
                 {
                     pCur->score_ = newScore;
@@ -390,7 +289,7 @@ ScoreMatrix_t * createLocalScoreMatrix(const vector<FragData>& contigFrags, cons
                     pPrev = &pScoreMatrix->d_[k*n+l];
                     nSitesContig = i-k-1;
                     nSitesOptical = j-l-1; 
-                    newScore = pPrev->score_ +  localScoringFunction(nSitesContig, nSitesOptical, cFragLength, oFragLength, boundaryFrag);
+                    newScore = pPrev->score_ +  localScoringFunction(nSitesContig, nSitesOptical, cFragLength, oFragLength, boundaryFrag, alignParams);
                     if (newScore > pCur->score_)
                     {
                         pCur->score_ = newScore;
@@ -475,22 +374,11 @@ MatchResult *  matchLocal(const ContigMapData * pContigMap, const OpticalMapData
                      vector<MatchResult *> * pAllMatches, bool forward, const AlignmentParams& alignParams)
 {
     MatchResult * bestMatch = 0;
-    double best_score = 0.0;
-    Index_t best_index = Index_t(-1,-1);
     const vector<FragData>& opticalFrags = pOpticalMap->getFrags();
     const vector<FragData>& contigFrags = pContigMap->getFrags(forward);
     const int m = contigFrags.size() + 1; // num rows
     const int n = opticalFrags.size() + 1; // num cols
-    //const int lr = m-1;
-    //const int lro = lr*n;
-    const ScoreElement_t * pE;
-    bool foundMatch = false;
 
-
-    // TEMP
-    return 0;
-
-    /*
     // Create the scoreMatrix
     ScoreMatrix_t * pScoreMatrix = createLocalScoreMatrix(contigFrags, opticalFrags, pOpticalMap->getNumFrags(), alignParams);
 
@@ -507,59 +395,51 @@ MatchResult *  matchLocal(const ContigMapData * pContigMap, const OpticalMapData
     assert (pScoreMatrix->m_ == m);
     assert (pScoreMatrix->n_ == n);
 
-    // In first pass over last row of the pScoreMatrix, find the best match
-    for(int i=1; i < m; i++)
-    {
-        for(int j=1; j < n; j++)
-        {
-            pE = &pScoreMatrix->d_[i*n + j];
-            if (pE->score_ > best_score)
-            {
-                best_score = pE->score_;
-                best_index = Index_t(i, j);
-                foundMatch = true;
-            }
-        }
-    }
+    // Build matches from the score matrix
+    LocalMatchMaker matchMaker(opt::maxMatchesPerContig, opt::minContigHitsLocal,
+                               opt::minLengthRatio, opt::maxMissRateContig,
+                               opt::avgChi2Threshold);
+    MatchResultPtrVec matches;
+    matchMaker.makeMatches(pScoreMatrix, matches, pOpticalMap, pContigMap, forward);
 
     #if DEBUG_MATCH_LOCAL > 0
-    std::cout << "Contig: " << pContigMap->getId() << " FoundMatch: " << foundMatch
-              << " BestIndex: " << best_index.first << "," << best_index.second
-              << std::endl;
+    std::cout << "Found " << matches.size()
+              << " local alignment for contig " << pContigMap->getId()
+              << " to " << pOpticalMap->getId()
+              << " in " << (forward ? " forward " : " reverse ") 
+              << " direction." << std::endl;
     #endif
 
-    // Create a MatchResult for the best scoring alignment, and make sure the alignment is valid.
-    if (foundMatch)
+    // Set the matches to be returned
+    if (!matches.empty())
     {
-        bestMatch = new MatchResult(pContigMap->getId(), pOpticalMap->getId(), forward, 
-        bestMatch = new MatchResult(best_index, pScoreMatrix, pContigMap, pOpticalMap, forward);
-        assert(bestMatch!=0);
-        bestMatch->buildAlignmentAttributes();
-        #if DEBUG_MATCH_LOCAL > 0
-        std::cout << "Contig: " << pContigMap->getId()
-                  << " FoundMatch: " << foundMatch
-                  << " cStart: " << bestMatch->cStartIndex_
-                  << " cEnd: " << bestMatch->cEndIndex_
-                  << " Hits: " << bestMatch->contigHits_
-                  << std::endl;
-        #endif
-        if (bestMatch->contigHits_ <= 0)
+        // The first match is the best match
+        bestMatch = matches.front();
+
+        if (pAllMatches)
         {
-            // The best scoring match is not valid, since all contigs fragments
-            // are in a gap alignment!
-            foundMatch = false;
-            delete bestMatch;
-            bestMatch = 0;
-        } 
+            pAllMatches->insert(pAllMatches->end(), matches.begin(), matches.end());
+        }
         else
         {
-            if (pAllMatches)
-                pAllMatches->push_back(bestMatch);
+            // Delete all other matches other than the best match
+            const MatchResultPtrVec::iterator E = matches.end();
+            for(MatchResultPtrVec::iterator iter = matches.begin() + 1;
+                iter != E;
+                iter++)
+            {
+                delete *iter;
+            }
+            matches.resize(1);
         }
     }
+
+    #if DEBUG_MATCH_GLOBAL > 0
+    std::cout << "pAllMatches->size(): " << pAllMatches->size() << std::endl;
+    #endif
+
     delete pScoreMatrix;
     return bestMatch;
-    */
 }
 
 // Match the fragments from a single contig to the entire optical map. Return the best score.

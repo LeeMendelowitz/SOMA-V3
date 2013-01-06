@@ -90,12 +90,13 @@ class MatchResult {
         reset();
     };
 
-    MatchResult(const string& contigId, const string& opticalId, bool contigIsForward, double score)
+    MatchResult(const string& contigId, const string& opticalId, int contigSize, bool contigIsForward, double score)
     {
         reset();
         contigId_ = contigId;
         chromosomeId_ = opticalId;
         forward_ = contigIsForward;
+        contigLength_ = contigSize;
         score_ = score;
     };
 
@@ -140,7 +141,7 @@ class MatchResult {
 
     // Contig information
     string contigId_;
-    int contigSize_; // size of the matched portion of the contig (bp)
+    int contigLength_; // total contig length (in bp)
 
     // Alignment location & orientation
     string chromosomeId_;

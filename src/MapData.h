@@ -16,6 +16,7 @@ class MapData
     std::string getId() const { return id_; }
     virtual int getStartBp(int ind, bool forward=true) const = 0;
     virtual int getEndBp(int ind, bool forward=true) const = 0;
+    virtual int getLength() const = 0;
 
     // Return a constant reference to the map fragments
     virtual const std::vector<FragData>& getFrags(bool forward=true) const = 0;

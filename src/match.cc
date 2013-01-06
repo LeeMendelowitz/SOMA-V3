@@ -53,9 +53,6 @@ bool contigFragDataVec_lt(const FragData& fd1, const FragData& fd2) { return fd1
 bool resultScoreComp(const MatchResult * r1, const MatchResult * r2) { return r1->score_ > r2->score_; }
 
 
-//MatchResult * runMatch(const ContigMapData * pContigMap, const OpticalMapData * pOpticalMap,
-//              vector<MatchResult *> * const pOthers, const AlignmentParams& alignParams);
-
 void matchContigToOpticalMaps(const ContigMapData * pContigMap, const vector<OpticalMapData *>& opticalMapList,
                               vector<MatchResult *> * const pResults, bool localAlignment = false);
 
@@ -310,8 +307,10 @@ void runPermutationTests(MatchResultMap * pMatchResultMap, const vector<OpticalM
         permutedOpticalMaps.push_back(pPermutedMap);
     }
 
-    AlignmentParams alignParams(0, opt::C_r_contig, opt::C_r_optical,
-                                opt::sdMax, opt::delta);  
+    AlignmentParams alignParams(opt::C_r_contig, opt::C_r_optical,
+                                opt::sdMax, Constants::SIGMA2, opt::delta,
+                                opt::smallFrag, opt::smallFragSlope,
+                                opt::H, opt::T);
 
     // Loop over the contigs. For each contig, perform trials for the permutation test. 
     MatchResultMap::iterator matchMapIter = pMatchResultMap->begin();
@@ -406,8 +405,10 @@ void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<Optical
     }
     }
 
-    AlignmentParams alignParams(0, opt::C_r_contig, opt::C_r_optical,
-                                opt::sdMax, opt::delta);  
+    AlignmentParams alignParams(opt::C_r_contig, opt::C_r_optical,
+                                opt::sdMax, Constants::SIGMA2, opt::delta,
+                                opt::smallFrag, opt::smallFragSlope,
+                                opt::H, opt::T);
 
     typedef vector<double> FloatVec; 
     typedef map<int, FloatVec> PermutationScoreMap;
@@ -534,8 +535,10 @@ void matchContigToOpticalMaps(const ContigMapData * pContigMap, const vector<Opt
         C_sigma = opt::sdMin;
         while (C_sigma <= opt::sdMax)
         {
-            AlignmentParams alignParams(0, opt::C_r_contig, opt::C_r_optical,
-                                        C_sigma, opt::delta);  
+            AlignmentParams alignParams(opt::C_r_contig, opt::C_r_optical,
+                                        C_sigma, Constants::SIGMA2, opt::delta,
+                                        opt::smallFrag, opt::smallFragSlope,
+                                        opt::H, opt::T);
 
             // Match in the forward direction
             bool forward = true;

@@ -38,6 +38,7 @@ namespace opt
     extern double minLengthRatio;
     extern double avgChi2Threshold;
     extern int maxMatchesPerContig;
+    extern int minContigHitsLocal; // minimum number of contig hits required for local alignment
 //    extern double falseCutRate;
 //    extern int maxGapSize;
     extern int numPermutationTrials;
@@ -46,15 +47,17 @@ namespace opt
     extern int smallFrag; // Cutoff of small fragments (bp)
     extern double smallFragSlope;
     extern bool localAlignment;
+
+    ///////////////////////////////////////////////////////
+    // Parameters for local alignment
+
+    // Local sizing scoring function shape parameters
+    extern double H; // Height of parabola. Positive parameter specifying reward for zero sizing error.
+    extern double T; // Root of parabola. Specifies the number of standard deviations of sizing error which gets zero cost.
 }
 
 namespace Globals
 {
-    typedef std::map<char, char> DNAMap; // map from a base to its complement
-
-    // Global Variables set by main
-    extern DNAMap * pDNAMap;
-    
     // initialize global variables
     void initialize();
 

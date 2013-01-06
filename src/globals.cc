@@ -30,7 +30,6 @@ namespace opt
     double sdMin = 4;
     double sdMax = 12;
     //int smallFragCutoff = 800; // 800 bp
-    double C_s = 0.0;
     double C_r_contig = 3.0; // Cost for missed contig site
     double C_r_optical = 5.0; // Cost for missed optical site
 //    double falseCutRate = 1E-6; // 1 false cut per 1E6 bp (1 Mbp)
@@ -38,6 +37,7 @@ namespace opt
     double minLengthRatio = 0.90; // minimum length ratio between aligned inner contig and optical map fragments
     double avgChi2Threshold = 10.0; // Max. avg. chi2 score across aligned blocks for an alignment to be considered
     int maxMatchesPerContig = 5;
+    int minContigHitsLocal = 5; 
 //   int maxGapSize = 0; // Maximum open gap allowed for missed fragments
     int numPermutationTrials = 0;
     int numThreads = 1;
@@ -45,14 +45,17 @@ namespace opt
     int smallFrag = 2000; // Cutoff of small fragments (bp)
     double smallFragSlope = C_r_contig/smallFrag;
     bool localAlignment = false;
+
+    ///////////////////////////////////////////////////////
+    // Parameters for local alignment
+
+    // Local sizing scoring function shape parameters
+    double H = 5.0; // Height of parabola. Positive parameter specifying reward for zero sizing error.
+    double T = 10.0; // Root of parabola. Specifies the number of standard deviations of sizing error which gets zero cost.
 }
 
 namespace Globals
 {
-    typedef std::map<char, char> DNAMap; // map from a base to its complement
-
-    DNAMap * pDNAMap = 0;
-    
     // initialize global variables
     void initialize();
 
@@ -62,17 +65,11 @@ namespace Globals
 
 void Globals::initialize()
 {
-    pDNAMap = new DNAMap;
-    pDNAMap->insert(DNAMap::value_type('A','T'));
-    pDNAMap->insert(DNAMap::value_type('T','A'));
-    pDNAMap->insert(DNAMap::value_type('G','C'));
-    pDNAMap->insert(DNAMap::value_type('C','G'));
-    pDNAMap->insert(DNAMap::value_type('N','N'));
     return;
 }
 
 // Free dynamically allocated global variables
 void Globals::free()
 {
-    delete pDNAMap;
+    return;
 }
