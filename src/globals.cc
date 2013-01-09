@@ -51,7 +51,7 @@ namespace opt
 
     // Local sizing scoring function shape parameters
     double H = 5.0; // Height of parabola. Positive parameter specifying reward for zero sizing error.
-    double T = 10.0; // Root of parabola. Specifies the number of standard deviations of sizing error which gets zero cost.
+    double T = 2.0; // Root of parabola. Specifies the number of standard deviations of sizing error which gets zero cost.
 }
 
 namespace Globals

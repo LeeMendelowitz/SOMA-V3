@@ -14,8 +14,11 @@ class MapData
     virtual ~MapData() {};
 
     std::string getId() const { return id_; }
+
+    // Get starting and ending bp for a fragment
     virtual int getStartBp(int ind, bool forward=true) const = 0;
     virtual int getEndBp(int ind, bool forward=true) const = 0;
+
     virtual int getLength() const = 0;
 
     // Return a constant reference to the map fragments
