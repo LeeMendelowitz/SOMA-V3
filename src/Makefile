@@ -7,7 +7,7 @@ debug: debug_executable
 srcs=match.cc\
      globals.cc \
      dp.cc \
-	 scoringFunctions.cc \
+     Scorer.cc \
 	 utils.cc \
 	 debugUtils.cc \
 	 ContigMapData.cc \
@@ -15,7 +15,8 @@ srcs=match.cc\
 	 OpticalMapData.cc \
 	 pugixml/pugixml.cpp \
 	 StandardMatchMaker.cc \
-	 LocalMatchMaker.cc 
+	 LocalMatchMaker.cc  \
+	 scoringFunctions.cc 
 
 release: CXX += -O3 -DNDEBUG
 release: executable

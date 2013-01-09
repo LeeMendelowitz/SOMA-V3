@@ -15,17 +15,16 @@
 #include "MatchResult.h"
 #include "debugUtils.h"
 #include "scoringFunctions.h"
-#include "MatchMakers.h"
+#include "StandardMatchMaker.h"
+#include "LocalMatchMaker.h"
+#include "LocalScorer.h"
+#include "GlobalScorer.h"
 
 #define DEBUG_MATRIX 0
 #define DEBUG_MATCH_LOCAL 0
 #define DEBUG_MATCH_GLOBAL 0
 
 using namespace std;
-
-
-
-
 
 class IndexVectorCmp_t
 {
@@ -323,7 +322,8 @@ MatchResult *  match(const ContigMapData * pContigMap, const OpticalMapData * pO
     ScoreMatrix_t * pScoreMatrix = createScoreMatrix2(contigFrags, opticalFrags, pOpticalMap->getNumFrags(), alignParams);
 
     // Build matches from the score matrix
-    StandardMatchMaker matchMaker(opt::maxMatchesPerContig);
+    GlobalScorer scorer(alignParams);
+    StandardMatchMaker matchMaker(opt::maxMatchesPerContig, &scorer);
     MatchResultPtrVec matches;
     matchMaker.makeMatches(pScoreMatrix, matches, pOpticalMap, pContigMap, forward);
 
@@ -396,7 +396,8 @@ MatchResult *  matchLocal(const ContigMapData * pContigMap, const OpticalMapData
     assert (pScoreMatrix->n_ == n);
 
     // Build matches from the score matrix
-    LocalMatchMaker matchMaker(opt::maxMatchesPerContig, opt::minContigHitsLocal,
+    LocalScorer localScorer(alignParams);
+    LocalMatchMaker matchMaker(&localScorer, opt::maxMatchesPerContig, opt::minContigHitsLocal,
                                opt::minLengthRatio, opt::maxMissRateContig,
                                opt::avgChi2Threshold);
     MatchResultPtrVec matches;

@@ -102,6 +102,7 @@ void XMLWriter::writeAlignment(const MatchResult& mr)
     matchResultNode.append_child("opticalMatchString").append_child(node_pcdata).set_value(mr.opticalMatchString_.c_str());
     matchResultNode.append_child("opticalAlignedIndex").append_child(node_pcdata).set_value(mr.opticalAlignedIndexString_.c_str());
     matchResultNode.append_child("contigMatchString").append_child(node_pcdata).set_value(mr.contigMatchString_.c_str());
+    matchResultNode.append_child("scoreString").append_child(node_pcdata).set_value(mr.scoreString_.c_str());
     matchResultNode.append_child("contigAlignedIndex").append_child(node_pcdata).set_value(mr.contigAlignedIndexString_.c_str());
     matchResultNode.append_child("contigLostIndex").append_child(node_pcdata).set_value(mr.contigLostIndexString_.c_str());
     

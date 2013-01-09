@@ -8,6 +8,7 @@
 #include "mapTypes.h"
 #include "OpticalMapData.h"
 #include "ContigMapData.h"
+#include "Scorer.h"
 
 using namespace std;
 
@@ -155,6 +156,7 @@ class MatchResult {
     int cEndBp_;
     bool forward_; // contig oriented forward or backward
     vector<MatchedChunk> matchedChunkList_;
+    vector<Score> scoreList_; // scores for each chunk
 
     // Alignment statistics
     double score_;
@@ -185,6 +187,7 @@ class MatchResult {
     string contigLostIndexString_;
     string opticalMatchString_;
     string opticalAlignedIndexString_;
+    string scoreString_;
 };
 
 ostream& operator<<(ostream& os, const MatchResult& mr);

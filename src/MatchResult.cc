@@ -128,6 +128,7 @@ void MatchResult::annotate()
     stringstream opt_ss, c_ss; // Strings representing the overall alignment
     stringstream opt_aligned, c_aligned; // Strings representing indices of aligned fragments
     stringstream c_lost; // String representing the lost fragment indices
+    stringstream score_ss;
 
     // Loop over the vector of matched fragment chunks and
     // compute alignment statistics and descriptive strings.
@@ -187,11 +188,25 @@ void MatchResult::annotate()
         }
     }
 
+    // Make a string depicting the components of the 
+    // score for a matched chunk
+    score_ss.precision(3);
+    for (vector<Score>::const_iterator iter = scoreList_.begin();
+         iter != scoreList_.end();
+         iter++)
+    {
+        score_ss << "(" << iter->contig << "," << iter->optical << "," << iter->sizing << ")";
+        if (iter != scoreList_.end() - 1)
+            score_ss << " / ";
+    }
+
+
     contigAlignedIndexString_ = c_aligned.str();
     contigMatchString_ = c_ss.str();
     contigLostIndexString_ = c_lost.str();
     opticalAlignedIndexString_ = opt_aligned.str();
     opticalMatchString_ = opt_ss.str();
+    scoreString_ = score_ss.str();
 }
 
 

@@ -2,7 +2,10 @@
 #define SCORING_FUNCTIONS_H
 
 #include <vector>
-#include "dp.h"
+#include "mapTypes.h"
+
+//Forward declaration
+class AlignmentParams;
 
 double gapPenalty(int fragSize, const AlignmentParams& ap);
 
@@ -13,10 +16,10 @@ double scoringFunction(int nContigSites, int nOpticalSites,
                        bool boundaryFrag,
                        const AlignmentParams& ap);
 
-double scoringFunction2( const vector<FragData>::const_iterator& cB,
-                         const vector<FragData>::const_iterator& cE,
-                         const vector<FragData>::const_iterator& oB,
-                         const vector<FragData>::const_iterator& oE,
+double scoringFunction2( const std::vector<FragData>::const_iterator& cB,
+                         const std::vector<FragData>::const_iterator& cE,
+                         const std::vector<FragData>::const_iterator& oB,
+                         const std::vector<FragData>::const_iterator& oE,
                          bool boundaryFrag ,
                          const AlignmentParams& ap);
 

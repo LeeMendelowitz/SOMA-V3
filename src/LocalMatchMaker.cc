@@ -1,4 +1,4 @@
-#include "MatchMakers.h"
+#include "LocalMatchMaker.h"
 #include "MatchResult.h"
 
 #include <algorithm>
@@ -58,6 +58,7 @@ bool LocalMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResul
         Index_t end_index = iter->second;
         MatchResult * pMatch = buildMatch(end_index, pScoreMatrix, pOpticalMap, pContigMap, contigIsForward, usedCells);
         if (pMatch == NULL) continue;
+        pScorer_->scoreMatchResult(pMatch);
         matches.push_back(pMatch);
         foundMatch = true;
     }

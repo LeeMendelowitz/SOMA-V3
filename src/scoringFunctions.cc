@@ -1,5 +1,10 @@
 #include "scoringFunctions.h"
-#include "dp.h"
+#include "AlignmentParams.h"
+#include "globals.h"
+
+#include <cassert>
+
+using namespace std;
 
 // Penalty for "losing" a small contig fragment.
 // (gapped alignment)

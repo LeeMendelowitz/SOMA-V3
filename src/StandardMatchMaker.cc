@@ -1,4 +1,4 @@
-#include "MatchMakers.h"
+#include "StandardMatchMaker.h"
 #include "MatchResult.h"
 
 #include <algorithm>
@@ -78,6 +78,7 @@ bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchRe
             delete pMatch;
         else
         {
+            pScorer_->scoreMatchResult(pMatch);
             matches.push_back(pMatch);
             foundMatch = true;
         }

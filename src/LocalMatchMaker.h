@@ -1,37 +1,18 @@
-#ifndef MATCHMAKERS_H
-#define MATCHMAKERS_H
+#ifndef LOCALMATCHMAKER_H
+#define LOCALMATCHMAKER_H
 
 #include "MatchMaker.h"
-
 #include <set>
 
-// The StandardMatchMaker builds global alignments
-// The best non-overlapping matches for the ScoreMatrix are selected.
-// A filter is applied to determine if the match is of acceptable quality.
-class StandardMatchMaker : public MatchMaker
-{
-    public: 
-    StandardMatchMaker(int maxMatches = -1) : maxMatches_(maxMatches) {};
-
-    // Build MatchResults from pScoreMatrix. Place MatchResults in matches.
-    bool makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResultPtrVec& matches,
-                     const MapData * pOpticalMap, const MapData * pContigMap, bool contigIsForward);
-
-
-    private:
-    MatchResult * buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
-                             const MapData * pContigMap, bool contigIsForward);
-    bool filterFunction(const MatchResult * pMatch);
-    int maxMatches_;
-};
-
+class Scorer;
 
 // The LocalMatchMaker builds local alignments.
 class LocalMatchMaker : public MatchMaker
 {
 
     public:
-    LocalMatchMaker(int maxMatches, size_t minContigHits, double minLengthRatio, double maxMissRateContig, double avgChi2Threshold) :
+    LocalMatchMaker(Scorer * pScorer, int maxMatches, size_t minContigHits, double minLengthRatio, double maxMissRateContig, double avgChi2Threshold) :
+        pScorer_(pScorer),
         maxMatches_(maxMatches),
         minContigHits_(minContigHits),
         minLengthRatio_(minLengthRatio),
@@ -50,6 +31,7 @@ class LocalMatchMaker : public MatchMaker
     MatchResult * buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
                              const MapData * pContigMap, bool contigIsForward, set<Index_t>& usedCells);
 
+    Scorer * pScorer_;
     int maxMatches_;
     size_t minContigHits_; // minimum number of contig hits to accept for an alignment
     double minLengthRatio_; // minimum length ratio between aligned contig and optical fragments
