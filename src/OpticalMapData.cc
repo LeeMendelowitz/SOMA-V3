@@ -24,8 +24,6 @@ OpticalMapData::OpticalMapData(int numFrags, const string& opticalId, bool isCir
 {
     calcFragBoundaries();
     if (isCircular_) makeCircular();
-    reverseFrags_ = frags_;
-    reverse(reverseFrags_.begin(), reverseFrags_.end());
 };
 
 //Constructor (from file)
@@ -41,8 +39,6 @@ OpticalMapData::OpticalMapData(const string& mapFile, bool isCircular) :
     frags_[numFrags_-1].firstOrLastFrag_ = true;
     calcFragBoundaries();
     if (isCircular_) makeCircular();
-    reverseFrags_ = frags_;
-    reverse(reverseFrags_.begin(), reverseFrags_.end());
 }
 
 void OpticalMapData::readFile(const string& mapFile)

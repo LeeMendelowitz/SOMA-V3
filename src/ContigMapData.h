@@ -18,15 +18,16 @@ class ContigMapData : public MapData
     ContigMapData();
 
     // Constructor
-    ContigMapData(int length, const string& contigId, const vector<SiteData>& sites);
+    ContigMapData(int length, const string& contigId, bool isForward, const vector<SiteData>& sites);
+    ContigMapData(int length, const string& contigId, bool isForward);
 
-    const vector<FragData>& getFrags(bool forward=true) const
-    {
-        if(forward) return frags_;
-        else return reverseFrags_;
-    }
 
     void setFrags(const vector<FragData>& frags);
+    const vector<FragData>& getFrags() const
+    {
+        return frags_;
+    }
+
 
     // Get the starting location of a restriction fragment
     int getStartBp(int ind, bool forward=true) const
@@ -61,13 +62,17 @@ class ContigMapData : public MapData
 
     int getLength() const { return length_; }
 
+    bool isForward() const { return isForward_;}
 
+    void setTwin(ContigMapData * pTwin) {pTwin_ = pTwin;}
+    ContigMapData * getTwin() const { return pTwin_; }
 
     private:
     vector<int> fragBoundaryBp_; // indices of the boundaries for each contig fragment
     vector<FragData> frags_;
-    vector<FragData> reverseFrags_; // reverse of frags_
+    ContigMapData * pTwin_; // pointer to the reverse of this map
     int length_; // length in bp
+    bool isForward_;
 
     // Filter out any silico fragments of zero size
     void computeFragsFromSites(const vector<SiteData>& sites);

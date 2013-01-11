@@ -14,6 +14,12 @@ class Score
 {
     public:
 
+    Score() :
+        contig(0),
+        optical(0),
+        sizing(0)
+    {}
+
     Score(double c, double o, double s) :
         contig(c),
         optical(o),

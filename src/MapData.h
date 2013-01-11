@@ -22,7 +22,7 @@ class MapData
     virtual int getLength() const = 0;
 
     // Return a constant reference to the map fragments
-    virtual const std::vector<FragData>& getFrags(bool forward=true) const = 0;
+    virtual const std::vector<FragData>& getFrags() const = 0;
 
     private:
     std::string id_;

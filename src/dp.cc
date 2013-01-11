@@ -312,7 +312,7 @@ MatchResult *  match(const ContigMapData * pContigMap, const OpticalMapData * pO
 {
     MatchResult * bestMatch = 0;
     const vector<FragData>& opticalFrags = pOpticalMap->getFrags();
-    const vector<FragData>& contigFrags = pContigMap->getFrags(forward);
+    const vector<FragData>& contigFrags = pContigMap->getFrags();
     //const int m = contigFrags.size() + 1; // num rows
     //const int n = opticalFrags.size() + 1; // num cols
     //const int lr = m-1;
@@ -375,7 +375,7 @@ MatchResult *  matchLocal(const ContigMapData * pContigMap, const OpticalMapData
 {
     MatchResult * bestMatch = 0;
     const vector<FragData>& opticalFrags = pOpticalMap->getFrags();
-    const vector<FragData>& contigFrags = pContigMap->getFrags(forward);
+    const vector<FragData>& contigFrags = pContigMap->getFrags();
     const int m = contigFrags.size() + 1; // num rows
     const int n = opticalFrags.size() + 1; // num cols
 
@@ -455,7 +455,7 @@ double matchPermutationTest(const ContigMapData * pContigMap, const OpticalMapDa
     double best_score = -Constants::INF;
     Index_t best_index = Index_t(-1,-1);
     const vector<FragData>& opticalFrags = pOpticalMap->getFrags();
-    const vector<FragData>& contigFrags = pContigMap->getFrags(forward);
+    const vector<FragData>& contigFrags = pContigMap->getFrags();
     const int m = contigFrags.size() + 1; // num rows
     const int n = opticalFrags.size() + 1; // num cols
     const int lr = m-1;

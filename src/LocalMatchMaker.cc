@@ -76,8 +76,7 @@ MatchResult * LocalMatchMaker::buildMatch(const Index_t& end_index, const ScoreM
                                           set<Index_t>& usedCells)
 {
 
-    const vector<FragData>& contigFrags = pContigMap->getFrags(contigIsForward);
-    const vector<FragData>& opticalFrags = pOpticalMap->getFrags();
+    const vector<FragData>& contigFrags = pContigMap->getFrags();
     const int n = pScoreMatrix->n_;
     double score = pScoreMatrix->d_[n*end_index.first + end_index.second].score_;
 
@@ -231,30 +230,11 @@ MatchResult * LocalMatchMaker::buildMatch(const Index_t& end_index, const ScoreM
             #endif
         }
 
-        MatchedChunk chunk = MatchedChunk(os, oe, opStartBp, opEndBp, opticalFrags,
-                                          cs, ce, cStartBp, cEndBp, contigFrags);
+        MatchedChunk chunk = MatchedChunk(os, oe, opStartBp, opEndBp, pOpticalMap,
+                                          cs, ce, cStartBp, cEndBp, pContigMap);
         matchedChunkList.push_back(chunk);
         pc = ce; po = oe;
     }
-
-    //////////////////////////////////////////////////////
-    //#ifdef DEBUG
-    // Check that there are at most two boundary chunks.
-    int boundaryCount = 0;
-    const vector<MatchedChunk>::const_iterator E = matchedChunkList.end();
-    for (vector<MatchedChunk>::const_iterator iter = matchedChunkList.begin();
-         iter != E;
-         iter++)
-    {
-        if (iter->boundaryChunk_)
-        {
-            boundaryCount++;
-            assert( iter == matchedChunkList.begin() || iter == (matchedChunkList.end()-1)) ;
-        }
-    }
-    assert(boundaryCount <= 2);
-    //#endif
-    ////////////////////////////////////////////////////////
 
     pMatch->buildAlignmentAttributes();
 

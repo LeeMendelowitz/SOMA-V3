@@ -7,23 +7,33 @@
 // Default Constructor
 ContigMapData::ContigMapData() :
     MapData(""),
-    length_(0) 
+    length_(0),
+    pTwin_(NULL)
     {};
 
 // Constructor
 // Create the frags_ from the sites vector provided
-ContigMapData::ContigMapData(int length, const string& contigId, const vector<SiteData>& sites) :
+ContigMapData::ContigMapData(int length, const string& contigId, bool isForward, const vector<SiteData>& sites) :
     MapData(contigId),
-    length_(length)
+    length_(length),
+    isForward_(isForward),
+    pTwin_(NULL)
 {
     computeFragsFromSites(sites);
     calcFragBoundaries();
 }
 
+// Constructor
+ContigMapData::ContigMapData(int length, const string& contigId, bool isForward) :
+    MapData(contigId),
+    length_(length),
+    isForward_(isForward),
+    pTwin_(NULL)
+{ }
+
 void ContigMapData::setFrags(const vector<FragData>& frags)
 {
     frags_ = frags;
-    reverseContigFragDataVec(frags_, reverseFrags_);
     calcFragBoundaries();
 }
 
@@ -37,7 +47,6 @@ void ContigMapData::computeFragsFromSites(const vector<SiteData>& sites)
     int pos = 0;
     FragData fragData = FragData();
     fragData.size_ = sIter->loc_; fragData.sd_ = 0;
-    //fragData.missCost_ = missedFragmentCostFunc(fragData.size_);
     fragData.pos_ = pos++;
     if (fragData.size_ > 0) frags_.push_back(fragData);
     sIter++;
@@ -54,15 +63,11 @@ void ContigMapData::computeFragsFromSites(const vector<SiteData>& sites)
     int lastFragLength = length_ - pLastSite->loc_;
     fragData = FragData();
     fragData.size_ = lastFragLength; fragData.sd_ = 0;
-    //fragData.missCost_ = missedFragmentCostFunc(fragData.size_);
     fragData.pos_ = pos++;
     if (fragData.size_>0) frags_.push_back(fragData);
     size_t numFrags = frags_.size();
     frags_[0].firstOrLastFrag_ = true;
     frags_[numFrags-1].firstOrLastFrag_ = true;
-
-    // Compute reverseFrags_
-    reverseContigFragDataVec(frags_, reverseFrags_);
 }
 
 // Reverse the orig vector<FragData>.

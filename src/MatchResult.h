@@ -9,72 +9,9 @@
 #include "OpticalMapData.h"
 #include "ContigMapData.h"
 #include "Scorer.h"
+#include "MatchedChunk.h"
 
 using namespace std;
-
-
-// Represents an aligned fragment block ("chunk")
-class MatchedChunk
-{
-    public:
-
-        typedef typename vector<FragData>::const_iterator FragDataConstIter;
-
-        // Constructor
-        //MatchedChunk () {}; // Default constructor
-        MatchedChunk(int opStart, int opEnd, int opStartBp, int opEndBp, const vector<FragData>& oData,
-                    int cStart, int cEnd, int cStartBp, int cEndBp, const vector<FragData>& cData) :
-                    opStart_(opStart), opEnd_(opEnd), opLength_(opEndBp - opStartBp),
-                    cStart_(cStart), cEnd_(cEnd), cLength_(abs(cEndBp - cStartBp)),
-                    opStartBp_(opStartBp), opEndBp_(opEndBp),
-                    cStartBp_(cStartBp), cEndBp_(cEndBp), 
-                    cMisses_(cEnd-cStart-1)
-        {
-
-            contigGap_ = (opStart_ == opEnd_);
-            opFragB_ = oData.begin() + opStart_;
-            opFragE_ = oData.begin() + opEnd_;
-            cFragB_ = cData.begin() + cStart_;
-            cFragE_ = cData.begin() + cEnd_;
-
-            opMisses_ = contigGap_ ? 0 : opEnd - opStart - 1;
-
-            assert ( (opFragB_ <= opFragE_) && (opFragB_ >= oData.begin()) && (opFragE_ <= oData.end()) );
-            assert ( (cFragB_ <= cFragE_) && (cFragB_ >= cData.begin()) && (cFragE_ <= cData.end()) );
-            assert ( ( cStart_ >= 0 ) && ((size_t) cStart_ <= cData.size()) );
-            assert ( ( cEnd_ >= 0) && ((size_t) cEnd_ <= cData.size()) );
-            assert ( cStart_ <= cEnd_ );
-
-            // This is a boundary chunk if it includes the first contig fragment
-            // or the last contig fragment.
-            boundaryChunk_ =  cStart_ == 0 || ((size_t) cEnd_ == cData.size());
-        }
-
-        // Data
-        bool contigGap_;
-        bool boundaryChunk_; // True if this is either the first or last matched chunk and is not bounded by two matched restriction sites. 
-        int opStart_; // optical start index (zero based, inclusive)
-        int opEnd_; // optical end index (exclusive)
-        int opLength_; // optical fragment length (bp)
-        int cStart_; // contig start index (zero based, inclusive)
-        int cEnd_; // contig end index (exclusive)
-        int cLength_; // contig fragment length (bp)
-
-        // Note: The optical map starting/ending positions are only approximate for the case
-        // of boundary chunks.
-        int opStartBp_; // approximate optical start bp (zero based, inclusive)
-        int opEndBp_; // approximate optical end bp (exclusive).
-        int cStartBp_; // contig fragment start, bp. (zero based, inclusive)
-        int cEndBp_; // contig end, bp. (exclusive)
-
-        int opMisses_; // number of unaligned optical sites within the block
-        int cMisses_; // number of unaligned contig sites within the block
-
-        FragDataConstIter cFragB_; // pointer to first contig fragment in chunk
-        FragDataConstIter cFragE_; // pointer to one beyond the last contig fragment in chunk
-        FragDataConstIter opFragB_; // pointer to first optical fragment in chunk
-        FragDataConstIter opFragE_; // pointer to one beyond the last optical fragment in chunk
-};
 
 typedef std::vector<MatchedChunk> MatchedChunkVec;
 

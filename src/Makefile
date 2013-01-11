@@ -16,7 +16,9 @@ srcs=match.cc\
 	 pugixml/pugixml.cpp \
 	 StandardMatchMaker.cc \
 	 LocalMatchMaker.cc  \
-	 scoringFunctions.cc 
+	 scoringFunctions.cc \
+     MatchedChunk.cc \
+
 
 release: CXX += -O3 -DNDEBUG
 release: executable

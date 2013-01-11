@@ -50,17 +50,17 @@ void MatchResult::buildAlignmentAttributes()
 
     // Assign the starting and ending bp locations.
     const MatchedChunk& firstChunk = matchedChunkList_.front();
-    opStartIndex_ = firstChunk.opStart_;
-    cStartIndex_ = firstChunk.cStart_;
-    opStartBp_ = firstChunk.opStartBp_;
-    cStartBp_ = firstChunk.cStartBp_;
+    opStartIndex_ = firstChunk.getOpticalStartIndex();
+    cStartIndex_ = firstChunk.getContigStartIndex();
+    opStartBp_ = firstChunk.getOpticalStartBp();
+    cStartBp_ = firstChunk.getContigStartBp();
 
 
     const MatchedChunk& lastChunk = matchedChunkList_.back();
-    opEndIndex_ = lastChunk.opEnd_ - 1; // inclusive
-    cEndIndex_ = lastChunk.cEnd_ - 1; // inclusive
-    opEndBp_ = lastChunk.opEndBp_;
-    cEndBp_ = lastChunk.cEndBp_;
+    opEndIndex_ = lastChunk.getOpticalEndIndex() - 1; // inclusive
+    cEndIndex_ = lastChunk.getContigEndIndex() - 1; // inclusive
+    opEndBp_ = lastChunk.getOpticalEndBp();
+    cEndBp_ = lastChunk.getContigEndBp();
 
     // Loop over the vector of matched fragment chunks and
     // compute alignment statistics and descriptive strings.
@@ -72,30 +72,32 @@ void MatchResult::buildAlignmentAttributes()
     for (ChunkIter mi = mb; mi != me; mi++)
     {
         bool firstAlignment = (mi == mb);
+        int cl = mi->getContigMatchLengthBp();
+        int ol = mi->getOpticalMatchLengthBp();
 
-        if (mi->contigGap_)
+        if (mi->isContigGap())
         {
-            contigUnalignedFrags_++;
-            contigUnalignedBases_ += mi->cLength_;
+            contigUnalignedFrags_ += mi->getNumContigFrags();
+            contigUnalignedBases_ += cl;
             continue;
         } 
 
-        opticalMisses_ += mi->opMisses_;
-        contigMisses_ += mi->cMisses_;
-        opticalTotalAlignedBases_ += mi->opLength_;
-        contigTotalAlignedBases_ += mi->cLength_;
-        if (!mi->boundaryChunk_)
+        opticalMisses_ += mi->getNumOpticalMisses();
+        contigMisses_ += mi->getNumContigMisses();
+        opticalTotalAlignedBases_ += ol;
+        contigTotalAlignedBases_ += cl;
+        if (!mi->isBoundaryChunk())
         {
             // Model assumes that Optical Frag ~ N(C, SIGMA^2*C) where C is contig frag size
-            double var = Constants::SIGMA2 * mi->cLength_;
-            double d = mi->opLength_ - mi->cLength_;
+            double var = Constants::SIGMA2 * cl;
+            double d = ol - cl;
             chi2_ += d*d/var;
-            contigInnerAlignedBases_ += mi->cLength_;
-            opticalInnerAlignedBases_ += mi->opLength_;
+            contigInnerAlignedBases_ += cl;
+            opticalInnerAlignedBases_ += ol;
             numAlignedInnerBlocks_++;
         }
 
-        if (firstAlignment && !mi->boundaryChunk_)
+        if (firstAlignment && !mi->isBoundaryChunk())
         {
             // The first alignment is not a boundary chunk.
             // Therefore, it is bounded by two restriction sites.
@@ -122,8 +124,6 @@ void MatchResult::buildAlignmentAttributes()
 // Populate the descriptive strings for the alignment
 void MatchResult::annotate()
 {
-    bool lastAlignment;
-    //bool firstAlignment;
     bool firstAlignedFrag = true;
     stringstream opt_ss, c_ss; // Strings representing the overall alignment
     stringstream opt_aligned, c_aligned; // Strings representing indices of aligned fragments
@@ -137,20 +137,18 @@ void MatchResult::annotate()
     me = matchedChunkList_.end();
     for (mi = mb; mi != me; mi++)
     {
-        lastAlignment = (mi == me-1);
-        //firstAlignment = (mi == mb);
 
-        if (mi->contigGap_)
+        if (mi->isContigGap())
         {
             opt_ss <<  " --- "; // Print a gap in the optical sequence
-            c_ss << " (" << mi->cLength_ << ") ";
-            c_lost << (c_lost.str().size() > 0 ? "," : "") << mi->cStart_;
+            c_ss << " (" << mi->getContigMatchLengthBp() << ") ";
+            c_lost << (c_lost.str().size() > 0 ? "," : "") << mi->getContigStartIndex();
 
         } else {
 
             vector<FragData>::const_iterator it,itb,ite;
 
-            if (firstAlignedFrag && !mi->boundaryChunk_)
+            if (firstAlignedFrag && !mi->isBoundaryChunk())
             {
                 // This chunk is bounded by a restriction site
                 // Semi-colon denotes a matched restriction site
@@ -160,24 +158,33 @@ void MatchResult::annotate()
                 c_aligned << "; ";
             }
 
-            firstAlignedFrag = false;
 
             // Add to alignment descriptive strings
-            for (it = mi->opFragB_; it != mi->opFragE_; it++)
+            const vector<FragData>::const_iterator opE = mi->getOpticalFragE();
+            const vector<FragData>::const_iterator cE = mi->getContigFragE();
+            for (it = mi->getOpticalFragB();
+                 it != opE;
+                 it++)
                 opt_ss << " " <<  it->size_ << "," << it->sd_ << " ";
 
-            int lasti = mi->opEnd_-1;
-            for (int i = mi->opStart_; i <= lasti; i++)
+            int lasti = mi->getOpticalEndIndex()-1;
+            for (int i = mi->getOpticalStartIndex();
+                 i <= lasti;
+                 i++)
                 opt_aligned << i << ( i==lasti  ? "" : ",");
 
-            for (it = mi->cFragB_; it != mi->cFragE_; it++)
+            for (it = mi->getContigFragB();
+                 it != cE;
+                 it++)
                 c_ss << " " <<  it->size_ << "," << " ";
 
-            lasti = mi->cEnd_-1;
-            for (int i = mi->cStart_; i <= lasti; i++)
+            lasti = mi->getContigEndIndex()-1;
+            for (int i = mi->getContigStartIndex(); i <= lasti; i++)
                 c_aligned << i << ( i==lasti  ? "" : ",");
 
-            if (!lastAlignment || !mi->boundaryChunk_)
+            // We post a trailing semi-colon denoting a matched site
+            // if it is a any chunk other than the first
+            if (firstAlignedFrag || !mi->isBoundaryChunk())
             {
                 // Semi-colon denotes a matched restriction site
                 c_ss << "; ";
@@ -185,6 +192,8 @@ void MatchResult::annotate()
                 opt_ss << "; ";
                 opt_aligned << ";";
             }
+
+            firstAlignedFrag = false;
         }
     }
 

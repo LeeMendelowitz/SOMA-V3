@@ -128,9 +128,24 @@ void readSilicoFile(const string& silicoFileName, vector<ContigMapData *>& retVe
         // Sort the sites based on location
         sort(contigSites.begin(), contigSites.end(), contigSiteDataVec_lt);
 
+        //////////////////////////////////////////////////////////////////
         // Construct contigMapData
-        ContigMapData * pContigMap = new ContigMapData(length, contigId, contigSites);
-        retVec.push_back(pContigMap);
+        ContigMapData * pContigMapForward = new ContigMapData(length, contigId, true, contigSites);
+
+        // Construct the reverse map
+        string reverseId = contigId + ".r";
+        vector<FragData> reverseFrags = pContigMapForward->getFrags();
+        reverse(reverseFrags.begin(), reverseFrags.end());
+        ContigMapData * pContigMapReverse = new ContigMapData(length, reverseId, false);
+        pContigMapReverse->setFrags(reverseFrags);
+
+        // Set these maps as twins
+        pContigMapForward->setTwin(pContigMapReverse);
+        pContigMapReverse->setTwin(pContigMapForward);
+        /////////////////////////////////////////////////////////////////
+
+        retVec.push_back(pContigMapForward);
+        retVec.push_back(pContigMapReverse);
     }
     silicoFile.close();
     return;
