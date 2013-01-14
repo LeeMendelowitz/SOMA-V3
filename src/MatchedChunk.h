@@ -23,7 +23,7 @@ class MatchedChunk
 
     void setScore(const Score& score) {score_ = score;}
 
-    Score getScore() const { return score_; }
+    const Score& getScore() const { return score_; }
     int getNumOpticalMisses() const;
     int getNumContigMisses() const;
     int getOpticalStartBp() const;

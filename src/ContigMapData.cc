@@ -7,17 +7,17 @@
 // Default Constructor
 ContigMapData::ContigMapData() :
     MapData(""),
-    length_(0),
-    pTwin_(NULL)
+    pTwin_(NULL),
+    length_(0)
     {};
 
 // Constructor
 // Create the frags_ from the sites vector provided
 ContigMapData::ContigMapData(int length, const string& contigId, bool isForward, const vector<SiteData>& sites) :
     MapData(contigId),
+    pTwin_(NULL),
     length_(length),
-    isForward_(isForward),
-    pTwin_(NULL)
+    isForward_(isForward)
 {
     computeFragsFromSites(sites);
     calcFragBoundaries();
@@ -26,9 +26,9 @@ ContigMapData::ContigMapData(int length, const string& contigId, bool isForward,
 // Constructor
 ContigMapData::ContigMapData(int length, const string& contigId, bool isForward) :
     MapData(contigId),
+    pTwin_(NULL),
     length_(length),
-    isForward_(isForward),
-    pTwin_(NULL)
+    isForward_(isForward)
 { }
 
 void ContigMapData::setFrags(const vector<FragData>& frags)

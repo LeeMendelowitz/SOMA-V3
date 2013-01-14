@@ -11,16 +11,18 @@
 #include <cmath>
 #include <set>
 #include <assert.h>
+#include <omp.h>
+#include <cstdlib>
+#include <cassert>
+
 #include "globals.h"
 #include "parseArgs.h"
 #include "utils.h"
 #include "dp.h"
+#include "MatchResult.h"
 #include "match.h"
 #include "xmlWriter.h"
 #include "exception.h"
-#include <omp.h>
-#include <cstdlib>
-#include <cassert>
 
 //#include <boost/math/distributions.hpp> 
 //#include "gamma-prob.c"
@@ -259,9 +261,9 @@ int main(int argc, char ** argv)
     {
         pResult = *resultListIter;
         pResult->annotate();
-        xmlWriterAll.writeAlignment(*pResult);
+        xmlWriterAll.writeMatchResult(*pResult);
         if( pResult->pval_ <= opt::pThreshold)
-            xmlWriterSig.writeAlignment(*pResult);
+            xmlWriterSig.writeMatchResult(*pResult);
         delete pResult; pResult = 0;
     }
 

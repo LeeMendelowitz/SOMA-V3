@@ -44,7 +44,8 @@ class Scorer
                          const std::vector<FragData>::const_iterator oE,
                          bool boundaryFrag) = 0;
 
-    Score scoreMatchedChunk(const MatchedChunk& chunk);
+    // Score a matched chunk. Set the score for the chunk, and return the score.
+    Score scoreMatchedChunk(MatchedChunk& chunk);
 
     // Score the matched chunks in a MatchResult
     void scoreMatchResult(MatchResult * pResult);

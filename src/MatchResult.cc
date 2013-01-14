@@ -125,10 +125,11 @@ void MatchResult::buildAlignmentAttributes()
 void MatchResult::annotate()
 {
     bool firstAlignedFrag = true;
+    bool lastChunk = false;
     stringstream opt_ss, c_ss; // Strings representing the overall alignment
     stringstream opt_aligned, c_aligned; // Strings representing indices of aligned fragments
     stringstream c_lost; // String representing the lost fragment indices
-    stringstream score_ss;
+    stringstream score_ss; score_ss.precision(3);
 
     // Loop over the vector of matched fragment chunks and
     // compute alignment statistics and descriptive strings.
@@ -137,6 +138,7 @@ void MatchResult::annotate()
     me = matchedChunkList_.end();
     for (mi = mb; mi != me; mi++)
     {
+        lastChunk = (mi == me-1);
 
         if (mi->isContigGap())
         {
@@ -195,17 +197,10 @@ void MatchResult::annotate()
 
             firstAlignedFrag = false;
         }
-    }
 
-    // Make a string depicting the components of the 
-    // score for a matched chunk
-    score_ss.precision(3);
-    for (vector<Score>::const_iterator iter = scoreList_.begin();
-         iter != scoreList_.end();
-         iter++)
-    {
-        score_ss << "(" << iter->contig << "," << iter->optical << "," << iter->sizing << ")";
-        if (iter != scoreList_.end() - 1)
+        const Score& score = mi->getScore();
+        score_ss << "(" << score.contig << "," << score.optical << "," << score.sizing << ")";
+        if (!lastChunk)
             score_ss << " / ";
     }
 

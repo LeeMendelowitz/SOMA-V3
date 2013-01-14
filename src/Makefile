@@ -18,6 +18,7 @@ srcs=match.cc\
 	 LocalMatchMaker.cc  \
 	 scoringFunctions.cc \
      MatchedChunk.cc \
+     xmlWriter.cc
 
 
 release: CXX += -O3 -DNDEBUG
