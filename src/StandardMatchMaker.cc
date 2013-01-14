@@ -207,6 +207,14 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
 
         MatchedChunk chunk = MatchedChunk(os, oe, opStartBp, opEndBp, pOpticalMap,
                                           cs, ce, cStartBp, cEndBp, pContigMap);
+        #if MATCHBUILDER_DEBUG > 0
+        std::cout << "Built Chunk: "
+                  << "contig = (" << chunk.getContigStartIndex() << "," << chunk.getContigEndIndex() << ")"
+                  << "optical = (" << chunk.getOpticalStartIndex() << "," << chunk.getOpticalEndIndex() << ")"
+                  << std::endl;
+        #endif
+
+
         matchedChunkList.push_back(chunk);
         pc = ce; po = oe;
     }

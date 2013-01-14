@@ -31,8 +31,8 @@ sdMin=4
 sdMax=4
 maxMissRateContig = 0.50
 pThreshold = 0.05
-siteCostContig = 11
-siteCostOptical = 21
+siteCostContig = 3
+siteCostOptical = 5
 
 def getBaseName(inFile):
     (dirName, fileName) = os.path.split(inFile)
