@@ -15,6 +15,86 @@ def computeSd(c):
 def printAlignment(mr, fout=sys.stdout):
     mr.printAlignment(fout)
 
+###################################################################
+# Define constructors of objects from XML Elements
+
+# The constructor is callable object which processes an xml element
+# into an object of some type
+
+# Create an object from the xmlElement text field
+class TextConstructor(object):
+    def __init__(self, constructor):
+        self.constructor = constructor
+    def __call__(self, xmlElement):
+        return self.constructor(xmlElement.text)
+
+IntField = TextConstructor(int)
+FloatField = TextConstructor(float)
+StrField = TextConstructor(str)
+BoolField = TextConstructor(lambda s: bool(int(s)))
+
+# Constructs a list of elements under the current element with the matching tag
+# For example:
+# <alignments>
+#    <alignment>......</alignment>
+#    <alignment>......</alignment>
+#    <alignment>......</alignment>
+# </alignments>
+# Assume ae is Element object for the root node.
+# ac = AlignmentConstructor() # This builds an alignment objects
+# alc = ListConstructor(ac, 'alignment')
+# myAlignments = alc(ae) # This returns a list of 3 alignment objects
+class ListConstructor(object):
+    def __init__(self, constructor, tag):
+        self.constructor = constructor
+        self.tag = tag
+
+    def __call__(self, xmlElement):
+        children = (e for e in xmlElement.iter() if e.tag==self.tag)
+        #return [self.constructor(e) for e in xmlElement.iter(tag=self.tag)]
+        return [self.constructor(e) for e in children]
+
+#####################################################################
+
+# A chunk from an optical map
+class MapChunk(object):
+    def __init__(self, xmlElement):
+
+        # Create list of (key, constructor) pairs
+        objList = [ ('start', IntField),
+                    ('end', IntField),
+                    ('startBp', IntField),
+                    ('endBp', IntField),
+                    ('frags', ListConstructor(IntField, 'frag'))
+                  ]
+
+        # Add attributes to the current object
+        self.__dict__.update((key, constructor(xmlElement.find(key))) for key,constructor in objList)
+    def lengthBp(self):
+        return self.endBp - self.startBp
+
+
+# The Score of a MatchedChunk
+class Score(object):
+    def __init__(self, xmlElement):
+        objList = [ ('contig', FloatField),
+                    ('optical', FloatField),
+                    ('sizing', FloatField)
+                  ]
+        # Add attributes to the current object
+        self.__dict__.update((key, constructor(xmlElement.find(key))) for key,constructor in objList)
+
+# A matched chunk
+class MatchedChunk(object):
+    def __init__(self, xmlElement):
+        objList = [ ('contig', MapChunk),
+                    ('optical', MapChunk),
+                    ('isContigGap', BoolField),
+                    ('isBoundaryChunk', BoolField),
+                    ('score', Score) ]
+        # Add attributes to the current object
+        self.__dict__.update((key, constructor(xmlElement.find(key))) for key,constructor in objList)
+
 class MatchResult:
     def __init__(self, *args, **kwargs):
         assert ('xmlElement' in kwargs)
@@ -22,80 +102,62 @@ class MatchResult:
         self.createFromXmlElement(xmlElement)
 
     def createFromXmlElement(self, xmlElement):
+
         # Extract contig information
         contigElement = xmlElement.find('contig');
         self.contigId = contigElement.find('name').text
-        self.size = int(contigElement.find('size').text)
+        self.contigLength = int(contigElement.find('length').text)
 
-        # Chromosome name
-        self.chromosomeName = xmlElement.find('chromosome').text
+        # Define attributes to be read from the xmlElement
+        strFields = ['chromosome',
+                     'opticalMatchString',
+                     'opticalAlignedIndex',
+                     'contigMatchString',
+                     'scoreString'
+                     ]
+        intFields = ['cStartIndex', 'cEndIndex', 'cStartBp', 'cEndBp',
+                     'cAlignedBases',
+                     'opStartIndex',
+                     'opEndIndex',
+                     'opStartBp',
+                     'opEndBp',
+                     'opAlignedBases',
+                     'totalHits',
+                     'totalMisses',
+                     'contigHits',
+                     'contigMisses',
+                     'contigUnalignedBases',
+                     'contigUnalignedFrags',
+                     'opticalHits',
+                     'opticalMisses'
+                     ]
+        boolFields = ['forward']                     
+        floatFields = ['score',
+                       'pval',
+                       'chi2',
+                       'totalMissRate',
+                       'contigMissRate',
+                       'contigUnalignedBaseRatio',
+                       'opticalMissRate'
+                       ]
 
-        # Extract alignment data
-        self.forward = int(xmlElement.find('forward').text)
-        self.score = float(xmlElement.find('score').text)
-        self.pval = float(xmlElement.find('pval').text)
-        self.opStart = int(xmlElement.find('opStartIndex').text)
-        self.opEnd = int(xmlElement.find('opEndIndex').text)
-        self.opStartBp = int(xmlElement.find('opStartBp').text)
-        self.opEndBp = int(xmlElement.find('opEndBp').text)
-        self.totalHits = int(xmlElement.find('totalHits').text)
-        self.totalMisses = int(xmlElement.find('totalMisses').text)
-        self.totalMissRate = float(xmlElement.find('totalMissRate').text)
-        self.contigHits = int(xmlElement.find('contigHits').text)
-        self.contigMisses = int(xmlElement.find('contigMisses').text)
-        self.contigMissRate = float(xmlElement.find('contigMissRate').text)
-        self.contigUnalignedBases = int(xmlElement.find('contigUnalignedBases').text)
-        self.contigUnalignedBaseRatio = float(xmlElement.find('contigUnalignedBaseRatio').text)
-        self.contigUnalignedFrags = int(xmlElement.find('contigUnalignedFrags').text)
-        self.opticalHits = int(xmlElement.find('opticalHits').text)
-        self.opticalMisses = int(xmlElement.find('opticalMisses').text)
-        self.opticalMissRate = float(xmlElement.find('opticalMissRate').text)
-        self.alignedLengthRatio = float(xmlElement.find('alignedLengthRatio').text)
-        self.opticalMatchString = xmlElement.find('opticalMatchString').text
-        self.contigMatchString = xmlElement.find('contigMatchString').text
+        objList = []
+        objList.extend((k, StrField) for k in strFields)
+        objList.extend((k, IntField) for k in intFields)
+        objList.extend((k, BoolField) for k in boolFields)
+        objList.extend((k, FloatField) for k in floatFields)
+        objList.append( ('alignment', ListConstructor(MatchedChunk, 'chunk')) )
 
-        contigLostIndexText = xmlElement.find('contigLostIndex').text
-        self.contigLostIndex = map(int, contigLostIndexText.split(',')) if contigLostIndexText else []
-
-        self.alignedOpticalFrags = [np.array(sList.split(','),dtype=int) for sList in xmlElement.find('opticalAlignedIndex').text.split(';') if len(sList)]
-        self.alignedContigFrags = [np.array(sList.split(','),dtype=int) for sList in xmlElement.find('contigAlignedIndex').text.split(';') if len(sList)]
-        # Map the aligned fragments to numpy array indices
-        offset = self.alignedOpticalFrags[0][0]
-        self.alignedOpticalFragsInd = [np.array(fragList, dtype=int)-offset for fragList in self.alignedOpticalFrags]
-        self.alignedContigFragsInd = [np.array(fragList, dtype=int) for fragList in self.alignedContigFrags] # Note: no offset here!
-
-        self.unalignedContigFrags = self.contigLostIndex
-        assert len(self.alignedOpticalFrags) == len(self.alignedContigFrags)
-
-        # Compute additional information from the MatchStrings
-        self.numAlignedFrags = len(self.alignedOpticalFrags)
-        opticalFragPattern = re.compile(r'(\d+),-?(\d+)')
-        fragDataList = opticalFragPattern.findall(self.opticalMatchString)
-        self.opticalFragLengths = np.array([s[0] for s in fragDataList], dtype=int)
-        self.opticalFragSD = np.array([s[1] for s in fragDataList], dtype=int)
-
-        contigFragPattern = re.compile(r'(\d+)')
-        contigDataList = contigFragPattern.findall(self.contigMatchString)
-        self.contigFragLengths = np.array(contigDataList, dtype=int)
-        self.contigFragSD = np.array([computeSd(c) for c in self.contigFragLengths])
-
-        # Compute number of sites, hits, misses
-        self.numContigSites = self.contigFragLengths.shape[0] - 1
-        self.numOpticalSites = self.opticalFragLengths.shape[0] - 1
-        self.numContigFragsUnaligned = len(self.unalignedContigFrags)
-
-        # Check consistency of data:
-        numContigHits = countChar(self.contigMatchString, ';')  # Number of matched restriction sites
-        numContigMisses = sum([len(frags)-1 for frags in self.alignedContigFrags])
-        numOpticalHits = countChar(self.opticalMatchString, ';')  # Number of matched restriction sites
-        assert (numContigHits == self.contigHits)
-        assert (numContigMisses == self.contigMisses)
-        assert (numOpticalHits == self.opticalHits)
-        #print self.contigId, self.chromosomeName, self.opStart, self.opEnd
-        self.computeStats()
+        # Add attributes to the current object
+        self.__dict__.update( (key, constructor(xmlElement.find(key))) for key,constructor in objList )
+                       
 
     # Compute statistics related to the alignment
+    # 1/4/2013: This function is now incompatible with the current
+    # implementation of the MatchResult class
     def computeStats(self):
+        pass
+        '''
         self.alignedOpticalLengths = np.array([np.sum(self.opticalFragLengths[frags]) for frags in self.alignedOpticalFragsInd])
         self.alignedOpticalVariance = np.array([np.sum(self.opticalFragSD[frags]**2) for frags in self.alignedOpticalFragsInd])
         self.alignedOpticalVariance = np.array([np.sum(self.opticalFragSD[frags]**2) for frags in self.alignedOpticalFragsInd])
@@ -130,41 +192,30 @@ class MatchResult:
             lengths = np.array([self.innerContigLength, self.innerOpticalLength], dtype=float)
             self.lengthRatio = np.min(lengths)/np.max(lengths)
             assert len(self.alignedOpticalLengths) == len(self.alignedOpticalVariance) == len(self.alignedContigLengths)
-
+        '''
 
     def printAlignment(self, fout=sys.stdout):
         mr = self
-        fout.write('%s %i %f\n'%(mr.contigId, mr.size, mr.pval))
-        fout.write('%s %i to %i\n'%(mr.chromosomeName, mr.opStart, mr.opEnd))
-        numAligned = len(mr.alignedContigFragsInd)
-        nextContigIndex = 0
+        fout.write('%s %i %f\n'%(mr.contigId, mr.contigLength, mr.pval))
+        fout.write('%s %i to %i\n'%(mr.chromosome, mr.opStartIndex, mr.opEndIndex))
         cStrings = []
         oStrings = []
         cStrings.append('Contig Frags')
         oStrings.append('Optical Frags')
-        for i in range(numAligned):
-            # Check if a gap needs to be printed
-            firstContigIndex = mr.alignedContigFragsInd[i][0]
-            if firstContigIndex != nextContigIndex:
-                gapIndices = np.arange(nextContigIndex, firstContigIndex)
-                gapContigFrags = mr.contigFragLengths[gapIndices]
-                cfragString = ' + '.join(map(str, gapContigFrags))
-                cfragString += ' = ' +  str(np.sum(gapContigFrags))
+
+        # Iterate over the MatchedChunks
+        for mc in self.alignment:
+            if mc.isContigGap:
+                cfragString = ' + '.join(map(str, mc.contig.frags))
+                cfragString += ' = ' +  str(np.sum(mc.contig.frags))
                 ofragString = 'GAP'
-                cStrings.append(cfragString)
-                oStrings.append(ofragString)
-                #fout.write('%25s | %25s\n'%(cfragString,ofragString))
-            contigFrags = mr.contigFragLengths[mr.alignedContigFragsInd[i]]
-            opticalFrags = mr.opticalFragLengths[mr.alignedOpticalFragsInd[i]]
-            opticalFragSD = mr.opticalFragSD[mr.alignedOpticalFragsInd[i]]
-            cfragString = ' + '.join(map(str, contigFrags))
-            cfragString += ' = ' +  str(np.sum(contigFrags))
-            ofragString = ' + '.join('%i'%(l) for l in opticalFrags)
-            ofragString += ' = ' +  str(np.sum(opticalFrags))
+            else:
+                cfragString = ' + '.join(map(str, mc.contig.frags))
+                cfragString += ' = ' +  str(np.sum(mc.contig.frags))
+                ofragString = str(np.sum(mc.optical.frags))
+                ofragString += ' = ' + ' + '.join(map(str,mc.optical.frags))
             cStrings.append(cfragString)
             oStrings.append(ofragString)
-            #fout.write('%25s | %25s\n'%(cfragString,ofragString))
-            nextContigIndex = mr.alignedContigFragsInd[i][-1]+1
 
         cw = max(len(s) for s in cStrings)
         ow = max(len(s) for s in oStrings)

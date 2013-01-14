@@ -53,7 +53,7 @@ def parseMatchFileXML(filename):
     '''
     for event,element in ElementTree.iterparse(filename):
         if element.tag == 'MatchResult':
-            mr = MatchResult(xmlElement = element, chromosomeName=chromName)
+            mr = MatchResult(xmlElement = element, chromosome=chromName)
             element.clear() # Clear the xml Element
             matchCount += 1
             matchResultList.append(mr)
@@ -114,7 +114,7 @@ def writeInfoFile(matchList, infoFileName):
 
     infoFile.write(header)
     for mr in matchList:
-        line = '%15s\t%15s\t%5i\t%5i\t%5i\t'%(mr.contigId, mr.chromosomeName, mr.opStart, mr.opEnd, mr.forward)
+        line = '%15s\t%15s\t%5i\t%5i\t%5i\t'%(mr.contigId, mr.chromosome, mr.opStart, mr.opEnd, mr.forward)
         line += '%5i\t%10i\t%4i\t%4i\t%5.2f\t%8i\t%20.3f\t%10.2f\t%6.4f\t'%(mr.numContigSites, mr.size, mr.contigMisses, mr.opticalMisses, 100*mr.totalMissRate, mr.contigUnalignedFrags, mr.contigUnalignedBaseRatio, mr.score, mr.pval)
         line += '%6.2f\t%6.2f\t%6.2f\t%6.2f\t%6.2f\t%10i\t%6.3f\n'%(mr.meanAlignedSD, mr.medianAlignedSD, mr.minAlignedSD, mr.maxAlignedSD, mr.lengthRatio, mr.basesInOneToOne, mr.basesInOneToOneRatio)
         infoFile.write(line)
@@ -181,8 +181,8 @@ def cmpMatchResultsByChrom(mr1, mr2):
             return -1
         else:
             return int(mr.group(1))
-    chrom1Num = getChromNum(mr1.chromosomeName)
-    chrom2Num = getChromNum(mr2.chromosomeName)
+    chrom1Num = getChromNum(mr1.chromosome)
+    chrom2Num = getChromNum(mr2.chromosome)
     if chrom1Num < chrom2Num:
         return -1
     elif chrom1Num > chrom2Num:
@@ -242,7 +242,7 @@ def refineMatchList(matchList):
             hasOverlap = False
             for mr2 in contigRefinedList:
                 # Check if mr1 and mr2 overlap
-                if mr1.chromosomeName != mr2.chromosomeName:
+                if mr1.chromosome != mr2.chromosome:
                     continue
                 if mr1.forward != mr2.forward:
                     continue

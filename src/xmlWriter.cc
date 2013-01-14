@@ -148,7 +148,7 @@ void XMLWriter::addMatchedChunk(xml_node& parent, const MatchedChunk& mc)
     chunkNode.append_child("isContigGap").append_child(node_pcdata).set_value(toCStr(mc.isContigGap()));
 
     // Add isBoundaryChunk
-    chunkNode.append_child("isboundarychunk").append_child(node_pcdata).set_value(toCStr(mc.isBoundaryChunk()));
+    chunkNode.append_child("isBoundaryChunk").append_child(node_pcdata).set_value(toCStr(mc.isBoundaryChunk()));
 
     // Add Score
     const Score& score = mc.getScore();
