@@ -116,38 +116,28 @@ void XMLWriter::addMatchedChunk(xml_node& parent, const MatchedChunk& mc)
 
     xml_node chunkNode = parent.append_child("chunk");
 
-    // Add optical map coords
-    xml_node opCoords = chunkNode.append_child("opIndex");
-    opCoords.append_child("start").append_child(node_pcdata).set_value(toCStr(mc.getOpticalStartIndex()));
-    opCoords.append_child("end").append_child(node_pcdata).set_value(toCStr(mc.getOpticalEndIndex()));
-
-    // Add contig coords
-    xml_node contigCoords = chunkNode.append_child("cIndex");
-    contigCoords.append_child("start").append_child(node_pcdata).set_value(toCStr(mc.getContigStartIndex()));
-    contigCoords.append_child("end").append_child(node_pcdata).set_value(toCStr(mc.getContigEndIndex()));
-
-    // Add optical bp coords
-    xml_node opBpCoords = chunkNode.append_child("opBpIndex");
-    opBpCoords.append_child("start").append_child(node_pcdata).set_value(toCStr(mc.getOpticalStartBp()));
-    opBpCoords.append_child("end").append_child(node_pcdata).set_value(toCStr(mc.getOpticalEndBp()));
-
-    // Add contig bp coords
-    xml_node cBpCoords = chunkNode.append_child("cBpCoords");
-    cBpCoords.append_child("start").append_child(node_pcdata).set_value(toCStr(mc.getContigStartBp()));
-    cBpCoords.append_child("end").append_child(node_pcdata).set_value(toCStr(mc.getContigEndBp()));
-
-    // Add contig frags
+    xml_node contigInfo = chunkNode.append_child("contig");
     {
-    xml_node contigFrags = chunkNode.append_child("contigFrags");
+    contigInfo.append_child("start").append_child(node_pcdata).set_value(toCStr(mc.getContigStartIndex()));
+    contigInfo.append_child("end").append_child(node_pcdata).set_value(toCStr(mc.getContigEndIndex()));
+    contigInfo.append_child("startBp").append_child(node_pcdata).set_value(toCStr(mc.getContigStartBp()));
+    contigInfo.append_child("endBp").append_child(node_pcdata).set_value(toCStr(mc.getContigEndBp()));
+    // Add contig frags
+    xml_node contigFrags = contigInfo.append_child("frags");
     vector<FragData>::const_iterator iter = mc.getContigFragB();
     vector<FragData>::const_iterator E = mc.getContigFragE();
     for(; iter != E; iter++)
         contigFrags.append_child("frag").append_child(node_pcdata).set_value(toCStr(iter->size_));
     }
 
-    // Add optical frags
+    xml_node opticalInfo = chunkNode.append_child("optical");
     {
-    xml_node opticalFrags = chunkNode.append_child("opticalFrags");
+    opticalInfo.append_child("start").append_child(node_pcdata).set_value(toCStr(mc.getOpticalStartIndex()));
+    opticalInfo.append_child("end").append_child(node_pcdata).set_value(toCStr(mc.getOpticalEndIndex()));
+    opticalInfo.append_child("startBp").append_child(node_pcdata).set_value(toCStr(mc.getOpticalStartBp()));
+    opticalInfo.append_child("endBp").append_child(node_pcdata).set_value(toCStr(mc.getOpticalEndBp()));
+    // Add optical frags
+    xml_node opticalFrags = opticalInfo.append_child("frags");
     vector<FragData>::const_iterator iter = mc.getOpticalFragB();
     vector<FragData>::const_iterator E = mc.getOpticalFragE();
     for(; iter != E; iter++)
