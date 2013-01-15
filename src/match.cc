@@ -87,72 +87,6 @@ double computePValue(double myScore, const vector<double>& scoreVec)
     return ((double) tailCount)/numSamples;
 }
 
-// Read the contig silico file
-// Create the ContigMapData instances, return pointers in a vector
-void readSilicoFile(const string& silicoFileName, vector<ContigMapData *>& retVec)
-{
-    retVec.clear();
-    ifstream silicoFile(silicoFileName.c_str(), ios_base::in);
-    if (silicoFile.fail()) {
-        ostringstream msg;
-        msg << "ERROR: Could not open input file " << silicoFileName;
-        throw(Exception(msg.str()));
-    }
-
-    string line, siteDataString;
-    int siteLoc;
-    set<string> contigIdSet; // set of contigId's
-    istringstream issLine, issContigData;
-    while(getline(silicoFile, line))
-    {
-        issLine.clear(); issLine.str(line); // clear the state flag bits
-        string contigId;
-        int length, numSites;
-        vector<SiteData> contigSites;
-        issLine >> contigId >> length >> numSites;
-        assert(contigIdSet.count(contigId)==0); // Check that contigId is unique
-        contigIdSet.insert(contigId);
-
-        //Read the list of restriction site locations
-        // The line that specifies the in-silico restriction site locations should separate each site by a semicolon
-        getline(silicoFile, line);
-        assert(!silicoFile.eof());
-        issLine.clear(); issLine.str(line);
-        while(getline(issLine, siteDataString, ';'))
-        {
-            siteLoc = stringToInt(siteDataString);
-            contigSites.push_back(SiteData(siteLoc));
-        }
-
-        // Check that the correct number of sites were read
-        assert((size_t) numSites == contigSites.size());
-
-        // Sort the sites based on location
-        sort(contigSites.begin(), contigSites.end(), contigSiteDataVec_lt);
-
-        //////////////////////////////////////////////////////////////////
-        // Construct contigMapData
-        ContigMapData * pContigMapForward = new ContigMapData(length, contigId, true, contigSites);
-
-        // Construct the reverse map
-        string reverseId = contigId + ".r";
-        vector<FragData> reverseFrags = pContigMapForward->getFrags();
-        reverse(reverseFrags.begin(), reverseFrags.end());
-        ContigMapData * pContigMapReverse = new ContigMapData(length, reverseId, false);
-        pContigMapReverse->setFrags(reverseFrags);
-
-        // Set these maps as twins
-        pContigMapForward->setTwin(pContigMapReverse);
-        pContigMapReverse->setTwin(pContigMapForward);
-        /////////////////////////////////////////////////////////////////
-
-        retVec.push_back(pContigMapForward);
-        retVec.push_back(pContigMapReverse);
-    }
-    silicoFile.close();
-    return;
-}
-
 int main(int argc, char ** argv)
 {
     // Parse command line arguments
@@ -168,29 +102,13 @@ int main(int argc, char ** argv)
     for(int i=0; i<numOpticalMaps; i++)
     {
         string opticalMapFile = opt::opticalMapList[i];
-        OpticalMapData * pOpticalMap = 0;
-        try {
-            pOpticalMap = new OpticalMapData(opticalMapFile, opt::circular);
-        }
-        catch (Exception& e)
-        {
-            cerr << e.what() << "\n";
-            return(1);
-        }
-        opticalMapList.push_back(pOpticalMap);
-        cout << "Read Optical Map " << opticalMapFile << " with " << pOpticalMap->getNumFrags() << " fragments." << "\n";
+        readMaps(opticalMapFile, opticalMapList);
     }
 
     // Read Silico file with contig map data    
     vector<ContigMapData *> contigVec;
-    try {
-        readSilicoFile(opt::silicoMap, contigVec);
-    } 
-    catch(Exception& e)
-    {
-        cerr << e.what()  << "\n";
-        return(1);
-    }
+    readMaps(opt::silicoMap, contigVec);
+
     const int numContigs = contigVec.size();
     cout << "Read Contig Silico file with " << numContigs << " contigs." << "\n";
 

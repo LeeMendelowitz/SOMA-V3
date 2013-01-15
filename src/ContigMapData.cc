@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include "ContigMapData.h"
+#include "MapReader.h"
 #include "utils.h"
 
 
@@ -10,18 +11,6 @@ ContigMapData::ContigMapData() :
     pTwin_(NULL),
     length_(0)
     {};
-
-// Constructor
-// Create the frags_ from the sites vector provided
-ContigMapData::ContigMapData(int length, const string& contigId, bool isForward, const vector<SiteData>& sites) :
-    MapData(contigId),
-    pTwin_(NULL),
-    length_(length),
-    isForward_(isForward)
-{
-    computeFragsFromSites(sites);
-    calcFragBoundaries();
-}
 
 // Constructor
 ContigMapData::ContigMapData(int length, const string& contigId, bool isForward) :
@@ -35,39 +24,14 @@ void ContigMapData::setFrags(const vector<FragData>& frags)
 {
     frags_ = frags;
     calcFragBoundaries();
-}
 
-void ContigMapData::computeFragsFromSites(const vector<SiteData>& sites)
-{
-    frags_.clear();
-    vector<SiteData>::const_iterator sIter = sites.begin();
-    const vector<SiteData>::const_iterator sIterEnd = sites.end();
-
-    // Create FragData from SiteData for first fragment
-    int pos = 0;
-    FragData fragData = FragData();
-    fragData.size_ = sIter->loc_; fragData.sd_ = 0;
-    fragData.pos_ = pos++;
-    if (fragData.size_ > 0) frags_.push_back(fragData);
-    sIter++;
-
-    // Add the middle fragments
-    for( ; sIter != sIterEnd; sIter++)
+    if (!frags_.empty())
     {
-        fragData = FragData(*(sIter-1), *sIter, pos++);
-        if (fragData.size_>0) frags_.push_back(fragData);
+        FragData& fd = *frags_.begin();
+        fd.firstOrLastFrag_ = true;
+        fd = *(frags_.end() - 1);
+        fd.firstOrLastFrag_ = true;
     }
-    
-    // Add the last fragment
-    vector<SiteData>::const_iterator pLastSite = sIterEnd-1;
-    int lastFragLength = length_ - pLastSite->loc_;
-    fragData = FragData();
-    fragData.size_ = lastFragLength; fragData.sd_ = 0;
-    fragData.pos_ = pos++;
-    if (fragData.size_>0) frags_.push_back(fragData);
-    size_t numFrags = frags_.size();
-    frags_[0].firstOrLastFrag_ = true;
-    frags_[numFrags-1].firstOrLastFrag_ = true;
 }
 
 // Reverse the orig vector<FragData>.
@@ -90,3 +54,31 @@ void ContigMapData::calcFragBoundaries()
         fragBoundaryBp_[i+1] = curPos;
     }
 }
+
+// Read contig maps from input file
+bool readMaps(const string& fileName, vector<ContigMapData *>& contigVec)
+{
+    MapReader reader(fileName);
+    MapInput mapData;
+    bool success = false;
+    while(reader.next(mapData))
+    {
+        // Construct new maps
+        ContigMapData * pForward = new ContigMapData(mapData.length_, mapData.mapId_, true);
+        ContigMapData * pReverse = new ContigMapData(mapData.length_, mapData.mapId_ + ".r", false);
+
+        pForward->setTwin(pReverse);
+        pReverse->setTwin(pForward);
+
+        // Set map fragments
+        pForward->setFrags(mapData.frags_);
+        reverse(mapData.frags_.begin(), mapData.frags_.end());
+        pReverse->setFrags(mapData.frags_);
+        contigVec.push_back(pForward);
+        contigVec.push_back(pReverse);
+        success = true;
+    }
+    return success;
+}
+
+

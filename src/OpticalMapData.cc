@@ -3,7 +3,9 @@
 #include <algorithm>
 
 #include "OpticalMapData.h"
+#include "MapReader.h"
 #include "exception.h"
+#include "globals.h"
 
 using namespace std;
 
@@ -44,10 +46,9 @@ OpticalMapData::OpticalMapData(const string& mapFile, bool isCircular) :
 void OpticalMapData::readFile(const string& mapFile)
 {
     double sizef, sdf;
-    int sizei, sdi;
+    int sizei;
     string line;
     istringstream iss;
-    int pos = 0;
 
     frags_.clear();
 
@@ -70,8 +71,7 @@ void OpticalMapData::readFile(const string& mapFile)
         
         // convert size and standard deviation from kbp to bp
         sizei = (int) (1000*sizef + 0.5); // round to integer
-        sdi = (int) (1000*sdf+0.5); // round to integer
-        FragData myFrag = FragData(sizei, sdi, pos++);
+        FragData myFrag = FragData(sizei);
         frags_.push_back(myFrag);
     }
 
@@ -98,4 +98,19 @@ void OpticalMapData::makeCircular()
 
     // Double frags_
     frags_.insert(frags_.end(), frags_.begin(), frags_.end());
+}
+
+
+bool readMaps(const std::string fileName, std::vector<OpticalMapData *> opMapVec)
+{
+    MapReader reader(fileName);
+    MapInput mapData;
+    bool success = false;
+    while(reader.next(mapData))
+    {
+        OpticalMapData * pMap = new OpticalMapData(mapData.frags_.size(), mapData.mapId_, opt::circular, mapData.frags_);
+        opMapVec.push_back(pMap);
+        success = true;
+    }
+    return success;
 }

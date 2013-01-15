@@ -18,9 +18,7 @@ class ContigMapData : public MapData
     ContigMapData();
 
     // Constructor
-    ContigMapData(int length, const string& contigId, bool isForward, const vector<SiteData>& sites);
     ContigMapData(int length, const string& contigId, bool isForward);
-
 
     void setFrags(const vector<FragData>& frags);
     const vector<FragData>& getFrags() const
@@ -74,11 +72,10 @@ class ContigMapData : public MapData
     int length_; // length in bp
     bool isForward_;
 
-    // Filter out any silico fragments of zero size
-    void computeFragsFromSites(const vector<SiteData>& sites);
     void calcFragBoundaries();
-
 };
 
 void reverseContigFragDataVec(const vector<FragData>& orig, vector<FragData>& reversed);
+bool readMaps(const std::string& fileName, vector<ContigMapData *>& contigMapVec);
+
 #endif

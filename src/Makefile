@@ -18,6 +18,7 @@ srcs=match.cc\
 	 LocalMatchMaker.cc  \
 	 scoringFunctions.cc \
      MatchedChunk.cc \
+	 MapReader.cc \
      xmlWriter.cc
 
 

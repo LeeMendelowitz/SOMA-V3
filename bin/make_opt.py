@@ -11,17 +11,28 @@
 import sys
 import re
 
-
-
 #############################################################################################
 class OpticalMapData:
-    def __init__(self, name, fragLength, fragSD, enzyme):
+    def __init__(self, name, frags, fragSD, enzyme):
         self.name = name
-        self.fragLength = fragLength
+        self.frags = frags
+        self.length = sum(frags)
         self.fragSD = fragSD
         self.enzyme = enzyme
         if self.fragSD is not None:
-            assert(len(self.fragSD)==len(self.fragLength))
+            assert(len(self.fragSD)==len(self.frags))
+
+    def writeMap(self, handle):
+        f = handle
+
+        fields = [self.name,
+                  str(self.length),
+                  str(len(self.frags))]
+        fields.extend(str(frag) for frag in self.frags)
+
+        outS = '\t'.join(fields) + '\n'
+        f.write(outS)
+
 
 #############################################################################################
 # Read an optical map in the Schwartz format
@@ -42,7 +53,7 @@ def readMapDataSchwartz(filename):
         chromName = line.strip()
         fields = line2.strip().split()
         enzyme = fields[0]
-        fragLengths = map(float, fields[2:])
+        fragLengths = [int(1000.0*float(field)) for field in fields[2:]] # Convert to bp
         omaps.append(OpticalMapData(chromName, fragLengths, None, enzyme))
         print 'Read map from chromosome %s with enzyme %s and %i fragments'%(chromName, enzyme, len(fragLengths))
     fin.close()
@@ -104,49 +115,12 @@ def readMapDataXML(fileName):
     assert(len(fragSDs)==0)
     assert(len(enzyme)==0)
     assert(len(mapName)==0)
-
     return opticalMapList
 
 #############################################################################################
-def writeMapDataSingleMap(opticalMapData, outFileName):
-    fout = open(outFileName, 'w')
-    hasSDData = (opticalMapData.fragSD != None)
-    numFrags = len(opticalMapData.fragLength)
-    for i in range(numFrags):
-        sdString = '%.3f'%(opticalMapData.fragSD[i]) if hasSDData else ''
-        fout.write('%.3f\t%s\n'%(opticalMapData.fragLength[i],sdString))
-    fout.close()
-
-#############################################################################################
 # Write a list of optical maps
-def writeMapDataAllMaps(opticalMapDataList, outFileName):
+def writeMaps(opticalMapDataList, outFileName):
     fout = open(outFileName, 'w')
-    firstMap = True
     for opMap in opticalMapDataList:
-        # Write the separator before all maps except the first
-        if not firstMap:
-            fout.write('%.3f\t%.3f\n'%(0.001, 0.000))
-        else:
-            firstMap = False
-        for fragL,fragSD in zip(opMap.fragLength, opMap.fragSD):
-            fout.write('%.3f\t%.3f\n'%(fragL,fragSD))
+        opMap.writeMap(fout)
     fout.close()
-
-#############################################################################################
-def main():
-    mapFile = sys.argv[1]
-    opMapList = readMapData(mapFile)
-    
-    # Remove all white space from restriction map names
-    for opMap in opMapList:
-        oldName = opMap.name
-        opMap.name = ''.join(oldName.split())
-
-    for opMap in opMapList:
-        outFileName = opMap.name + '.opt'
-        writeMapDataSingleMap(opMap, outFileName)
-
-
-#############################################################################################
-if __name__ == '__main__':
-    main()

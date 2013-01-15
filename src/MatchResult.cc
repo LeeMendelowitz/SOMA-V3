@@ -167,7 +167,7 @@ void MatchResult::annotate()
             for (it = mi->getOpticalFragB();
                  it != opE;
                  it++)
-                opt_ss << " " <<  it->size_ << "," << it->sd_ << " ";
+                opt_ss << " " <<  it->size_ ;
 
             int lasti = mi->getOpticalEndIndex()-1;
             for (int i = mi->getOpticalStartIndex();
