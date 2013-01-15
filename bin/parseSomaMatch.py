@@ -142,17 +142,24 @@ def writeInfoFile2(matchList, infoFileName):
               'opStartBp',
               'opEndBp',
               'opAlignedBases',
+              'contigMisses',
+              'contigMissRate',
+              'opticalMisses',
+              'opticalMissRate',
+              'totalHits',
+              'totalMisses',
+              'totalMissRate',
               'score']
 
     mr = matchList[0]
-    fieldTypes = [type(mr.__getattribute__(f)) for f in fields]
+    fieldTypes = [type(mr.__dict__[f]) for f in fields]
     formatters = [formatDict.get(t, str) for t in fieldTypes]
 
     # Write Header
     fout.write('#' + ','.join(fields) + '\n')
     fd = formatDict
     for mr in matchList:
-        fieldStrs = [formatter(mr.__getattribute__(f)) for f,formatter in zip(fields, formatters)]
+        fieldStrs = [formatter(mr.__dict__[f]) for f,formatter in zip(fields, formatters)]
         fout.write(','.join(fieldStrs) + '\n')
     fout.close()
 
