@@ -323,7 +323,8 @@ MatchResult *  match(const ContigMapData * pContigMap, const OpticalMapData * pO
 
     // Build matches from the score matrix
     GlobalScorer scorer(alignParams);
-    StandardMatchMaker matchMaker(opt::maxMatchesPerContig, &scorer);
+    StandardMatchMaker matchMaker(&scorer, opt::maxMatchesPerContig, opt::minContigHits,
+                                  opt::minLengthRatio, opt::maxMissRateContig, opt::avgChi2Threshold);
     MatchResultPtrVec matches;
     matchMaker.makeMatches(pScoreMatrix, matches, pOpticalMap, pContigMap, forward);
 
@@ -397,7 +398,7 @@ MatchResult *  matchLocal(const ContigMapData * pContigMap, const OpticalMapData
 
     // Build matches from the score matrix
     LocalScorer localScorer(alignParams);
-    LocalMatchMaker matchMaker(&localScorer, opt::maxMatchesPerContig, opt::minContigHitsLocal,
+    LocalMatchMaker matchMaker(&localScorer, opt::maxMatchesPerContig, opt::minContigHits,
                                opt::minLengthRatio, opt::maxMissRateContig,
                                opt::avgChi2Threshold);
     MatchResultPtrVec matches;

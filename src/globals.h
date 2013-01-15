@@ -34,11 +34,14 @@ namespace opt
     extern double C_r_optical;
     extern double C_r_contig;
     //extern double C_s;
+
+    // Match/Filter options
     extern double maxMissRateContig;
     extern double minLengthRatio;
     extern double avgChi2Threshold;
     extern int maxMatchesPerContig;
-    extern int minContigHitsLocal; // minimum number of contig hits required for local alignment
+    extern int minContigHits;
+
 //    extern double falseCutRate;
 //    extern int maxGapSize;
     extern int numPermutationTrials;

@@ -10,10 +10,14 @@
 class StandardMatchMaker : public MatchMaker
 {
     public: 
-    StandardMatchMaker(int maxMatches, Scorer * pScorer) :
+    StandardMatchMaker(Scorer * pScorer, int maxMatches, size_t minContigHits, double minLengthRatio, double maxMissRateContig, double avgChi2Threshold) :
+        pScorer_(pScorer),
         maxMatches_(maxMatches),
-        pScorer_(pScorer)
-        {};
+        minContigHits_(minContigHits),
+        minLengthRatio_(minLengthRatio),
+        maxMissRateContig_(maxMissRateContig),
+        avgChi2Threshold_(avgChi2Threshold)
+    { };
 
     // Build MatchResults from pScoreMatrix. Place MatchResults in matches.
     bool makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResultPtrVec& matches,
@@ -25,8 +29,13 @@ class StandardMatchMaker : public MatchMaker
                              const MapData * pContigMap, bool contigIsForward);
     bool filterFunction(const MatchResult * pMatch);
     void scoreMatch(MatchResult * pMatch); // Fill in the score attributes of the MatchResult
-    int maxMatches_;
+
     Scorer * pScorer_;
+    int maxMatches_;
+    size_t minContigHits_; // minimum number of contig hits to accept for an alignment
+    double minLengthRatio_; // minimum length ratio between aligned contig and optical fragments
+    double maxMissRateContig_;
+    double avgChi2Threshold_;
 };
 
 #endif

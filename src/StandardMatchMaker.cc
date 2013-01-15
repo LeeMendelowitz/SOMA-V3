@@ -231,11 +231,11 @@ bool StandardMatchMaker::filterFunction(const MatchResult * pResult)
     //Chi2 Filter
     bool failChi2Filter = false;
     if (pResult->numAlignedInnerBlocks_ > 0)
-        failChi2Filter = (pResult->chi2_/((double) pResult->numAlignedInnerBlocks_)) > opt::avgChi2Threshold;
+        failChi2Filter = (pResult->chi2_/((double) pResult->numAlignedInnerBlocks_)) > avgChi2Threshold_;
        
-    bool failLengthRatio = pResult->alignedLengthRatio_ < opt::minLengthRatio;
-    bool failContigMissRate = pResult->contigMissRate_ > opt::maxMissRateContig;
-    bool failContigHitsCheck = pResult->contigHits_ <= 0;
+    bool failLengthRatio = pResult->alignedLengthRatio_ < minLengthRatio_;
+    bool failContigMissRate = pResult->contigMissRate_ > maxMissRateContig_;
+    bool failContigHitsCheck = (size_t) pResult->contigHits_ <= minContigHits_;
 
     bool fail = (failChi2Filter || 
                  failLengthRatio ||
