@@ -120,6 +120,44 @@ def writeInfoFile(matchList, infoFileName):
         infoFile.write(line)
     infoFile.close()
 
+def writeInfoFile2(matchList, infoFileName):
+
+    if not matchList:
+        return
+
+    fout = open(infoFileName, 'w')
+
+    formatDict = {}
+    formatDict[float] = lambda v: '%6.3f'%v
+
+    fields = ['contigId', 
+              'chromosome',
+              'cStartIndex',
+              'cEndIndex',
+              'cStartBp',
+              'cEndBp',
+              'cAlignedBases',
+              'opStartIndex',
+              'opEndIndex',
+              'opStartBp',
+              'opEndBp',
+              'opAlignedBases',
+              'score']
+
+    mr = matchList[0]
+    fieldTypes = [type(mr.__getattribute__(f)) for f in fields]
+    formatters = [formatDict.get(t, str) for t in fieldTypes]
+
+    # Write Header
+    fout.write('#' + ','.join(fields) + '\n')
+    fd = formatDict
+    for mr in matchList:
+        fieldStrs = [formatter(mr.__getattribute__(f)) for f,formatter in zip(fields, formatters)]
+        fout.write(','.join(fieldStrs) + '\n')
+    fout.close()
+
+
+
 ########################################################################
 # open a .all_match file, create a matchList of only quality matches,
 # pickle the matchList to a file

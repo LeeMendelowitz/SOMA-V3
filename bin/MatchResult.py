@@ -115,7 +115,10 @@ class MatchResult:
                      'contigMatchString',
                      'scoreString'
                      ]
-        intFields = ['cStartIndex', 'cEndIndex', 'cStartBp', 'cEndBp',
+        intFields = ['cStartIndex',
+                     'cEndIndex',
+                     'cStartBp',
+                     'cEndBp',
                      'cAlignedBases',
                      'opStartIndex',
                      'opEndIndex',
