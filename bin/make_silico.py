@@ -5,24 +5,17 @@ import re
 import os
 from Bio import SeqIO
 import argparse
+from rebase import rebase
 
 # Usage: make_silico.py fasta enzyme outfile
-class Site:
-    def __init__(self,loc):
-       self.loc = loc
-
-    # Return string representation
-    def str(self):
-        return str(self.loc)
 
 # find restriction sites 
 # dna is a contig
 def findSites(dna, recSeq):
     sites = []
     lr = len(recSeq)
-    for loc in range(0, len(dna)):
-        if(dna[loc:loc+lr] == recSeq):
-            sites.append(Site(loc+1))
+    strs = (dna[loc:loc+lr] for loc in xrange(len(dna)))
+    sites = [i for i,s in enumerate(strs) if s==recSeq]
     return sites
    
 def createInsilico(fout, dna, contigId, recSeq):
@@ -31,33 +24,32 @@ def createInsilico(fout, dna, contigId, recSeq):
     numSites = len(sites)
     if (ldna > 0 and numSites > 0):
         outString = ' '.join([contigId,str(ldna), str(numSites)])+'\n'
-        outString += ';'.join([site.str() for site in sites])
+        outString += ';'.join(str(site) for site in sites)
         fout.write(outString + '\n')
 
 # Return arguments:
 #   fasta, enzyme, outfile
 def parseArgs():
     parser = argparse.ArgumentParser(description="Create in-silico optical map from FASTA")
-    parser.add_argument('fasta')
-    parser.add_argument('enzyme')
-    parser.add_argument('outfile')
+    parser.add_argument('fasta', help = 'Path to input FASTA file')
+    parser.add_argument('enzyme', help = 'Enzyme name')
+    parser.add_argument('outfile', help = 'Output file.')
     args = parser.parse_args()
     return args
 
 def getRecSeq(enzyme):
-    repbase = 'repbase.staden'
-    if not os.path.exists(repbase):
-        raise RuntimeError('make_silico ERROR: Cannot find %s'%repbase)
-
+   
+    enzyme = enzyme.upper()
     # Get the enzyme recognition pattern
-    mLines = [l.strip() for l in open(repbase) if enzyme in l]
-    if not mLines:
-        raise RuntimeError('No Match for enzyme %s in %s\n'%(enzyme, repbase))
-    if len(mLines)>1:
-        raise RuntimeError('Found %i matches for enzyme %s in %s\n'%(len(mLines), enzyme, repbase))
-    grepresult = mLines[0]
-    name, recSeq = grepresult.split('/')[0:2]
-    recSeq = recSeq.replace('\'','')
+    if enzyme not in rebase:
+        raise RuntimeError('No Match for enzyme %s in rebase'%enzyme)
+
+    recSeqs = rebase[enzyme]
+
+    if len(recSeqs)>1:
+        raise RuntimeError('Found %i matches for enzyme %s\n'%(len(mLines), enzyme))
+
+    recSeq = recSeqs[0]
 
     # Check that the resctriction_seq is not degenerate
     if(re.search('[^acgtACGT]', recSeq)):

@@ -73,6 +73,6 @@ class OpticalMapData : public MapData
     void readFile(const string&);
 };
 
-bool readMaps(const std::string fileName, std::vector<OpticalMapData *> opMapVec);
+bool readMaps(const std::string fileName, std::vector<OpticalMapData *>& opMapVec);
 
 #endif
