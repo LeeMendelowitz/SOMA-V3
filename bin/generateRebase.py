@@ -50,13 +50,13 @@ def readRebase(fname):
                 continue
             fields = l.split('/')
             enzyme = fields[0].upper()
-            recSeq = fields[1].replace("'", '').upper()
+            recSeqs = [field.replace("'", '').upper() for field in fields[1:] if field]
             try:
                 if enzyme in rebase:
                     raise DuplicateEnzyme('Duplicate Enzyme in rebase.staden: %s' % enzyme)
             except DuplicateEnzyme as e:
                 sys.stdout.write('WARNING: %s\n'%str(e))
-            rebase[enzyme].append(recSeq)
+            rebase[enzyme].extend(recSeqs)
 
     rebase = dict(rebase)
     return (comment, rebase)
