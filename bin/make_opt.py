@@ -6,6 +6,9 @@
 # Description:
 # Script to read optical maps in either the XML or Schwartz format
 # The optical map data can be written to separate files for each chromosome (as SOMA expects)
+
+# The soma optical map format has one record per line, tab delimited:
+# "MAPID LENGTH_BP NUM_FRAGS FRAG1 FRAG2 FRAG3 ..."
 #############################################################################################
 
 import sys

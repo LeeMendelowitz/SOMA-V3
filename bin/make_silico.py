@@ -14,18 +14,27 @@ from rebase import rebase
 def findSites(dna, recSeq):
     sites = []
     lr = len(recSeq)
-    strs = (dna[loc:loc+lr] for loc in xrange(len(dna)))
-    sites = [i for i,s in enumerate(strs) if s==recSeq]
+    sites = [loc for loc in xrange(len(dna)) if dna[loc:loc+lr]==recSeq]
     return sites
-   
-def createInsilico(fout, dna, contigId, recSeq):
+  
+##############################################
+# Write an insilico restriction map for the given contig
+def writeInsilico(fout, dna, contigId, recSeq):
     ldna = len(dna)
     sites = findSites(dna, recSeq)
     numSites = len(sites)
-    if (ldna > 0 and numSites > 0):
-        outString = ' '.join([contigId,str(ldna), str(numSites)])+'\n'
-        outString += ';'.join(str(site) for site in sites)
-        fout.write(outString + '\n')
+    frags = []
+
+    # compute restriction fragments from sites
+    if sites:
+        frags = [sites[0]]
+        frags.extend(sites[i+1] - sites[i] for i in xrange(0, numSites-1))
+        frags.append(ldna - sites[-1])
+
+    outS = [contigId, str(ldna), str(len(frags))]
+    outS.extend(str(frag) for frag in frags)
+    outS = '\t'.join(outS)
+    fout.write(outS + '\n')
 
 # Return arguments:
 #   fasta, enzyme, outfile
@@ -66,7 +75,7 @@ def makeInsilicoMain(fasta, enzyme, outFile):
     for rec in SeqIO.parse(fin, 'fasta'):
         dna = str(rec.seq).upper()
         contigId = rec.id
-        createInsilico(fout, dna, contigId, recSeq)
+        writeInsilico(fout, dna, contigId, recSeq)
     fin.close()
     fout.close()
 
