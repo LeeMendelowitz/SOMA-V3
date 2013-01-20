@@ -13,17 +13,17 @@ class AlignmentParams;
 // return the best match as result
 // if match_others is true, then put other match results in MatchResult
 MatchResult * match(const ContigMapData * pContigMap, const OpticalMapData * pOpticalMap,
-                     std::vector<MatchResult *> * pOthers, bool forward, const AlignmentParams& alignParams);
+                     std::vector<MatchResult *> * pOthers, const AlignmentParams& alignParams);
 
 // Light-weight alignment for permutation test.
 // This alignment avoids filtering and avoids the construction of MatchResults.
 double matchPermutationTest(const ContigMapData * pContigMap, const OpticalMapData * pOpticalMap,
-                        bool forward, const AlignmentParams& alignParams);
+                        const AlignmentParams& alignParams);
 
 //Match the fragments from a single contig to the entire optical map
 // return the best match as result
 // if match_others is true, then put other match results in MatchResult
 MatchResult * matchLocal(const ContigMapData * pContigMap, const OpticalMapData * pOpticalMap,
-                     std::vector<MatchResult *> * pOthers, bool forward, const AlignmentParams& alignParams);
+                     std::vector<MatchResult *> * pOthers, const AlignmentParams& alignParams);
 
 #endif

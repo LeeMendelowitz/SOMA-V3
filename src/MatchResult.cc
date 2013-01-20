@@ -9,6 +9,8 @@
 
 #define MR_DEBUG 0
 
+using namespace std;
+
 void MatchResult::setMatchedChunks(const MatchedChunkVec& matchedChunkList)
 {
     matchedChunkList_ = matchedChunkList;
@@ -28,6 +30,12 @@ ostream& operator<<(ostream& os, const MatchResult& mr)
        << mr.totalMisses_ << " ";
        //<< mr.pval_;
     return os;
+}
+
+void printAttributes(ostream& os, const MatchResult& mr)
+{
+    os << "opticalAlignedBases: " << mr.opticalTotalAlignedBases_ << "; "
+       << "contigAlignedBases: " << mr.contigTotalAlignedBases_ << "; ";
 }
 
 

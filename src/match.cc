@@ -88,22 +88,30 @@ double computePValue(double myScore, const vector<double>& scoreVec)
     return ((double) tailCount)/numSamples;
 }
 
-void readMaps(vector<OpticalMapData *>& opMapVec, vector<ContigMapData *>& contigVec)
+void readMaps(vector<OpticalMapData *>& opMapVec, vector<ContigMapData *>& allContigMaps, vector<ContigMapData *>& forwardContigMaps)
 {
     size_t numOpticalMaps = opt::opticalMapList.size();
     for(size_t i=0; i<numOpticalMaps; i++)
         readMaps(opt::opticalMapList[i], opMapVec);
 
     // Read Silico file with contig map data    
-    readMaps(opt::silicoMap, contigVec);
+    readMaps(opt::silicoMap, allContigMaps);
 
 
-    // Sort contigs in contigVec by the number of sites
-    sort(contigVec.begin(), contigVec.end(), contigDataVec_comp);
+    // Sort contigs by the number of sites
+    sort(allContigMaps.begin(), allContigMaps.end(), contigDataVec_comp);
+
+    // Copy the pointers to the forward maps into forwardContigMaps
+    for (size_t i = 0; i < allContigMaps.size(); i++)
+    {
+        ContigMapData * pContig = allContigMaps[i];
+        if(pContig->isForward())
+            forwardContigMaps.push_back(pContig);
+    }
 
     #if DEBUG_READMAPS > 0
     const size_t opN = opMapVec.size();
-    const size_t cN = contigVec.size();
+    const size_t cN =  forwardContigMaps.size();
     cout << "Read " << opN << " optical maps: " << endl;
     for(size_t i = 0; i < opN; i++)
     {
@@ -117,7 +125,7 @@ void readMaps(vector<OpticalMapData *>& opMapVec, vector<ContigMapData *>& conti
     cout << "Read " << cN << " contigs: " << endl;
     for(size_t i = 0; i < cN; i++)
     {
-        const ContigMapData * pMap = contigVec[i];
+        const ContigMapData * pMap = forwardContigMaps[i];
         cout << "\t" << pMap->getId() << ": "
                      << pMap->getNumFrags() << " frags, "
                      << pMap->getLength() << " bp."
@@ -140,9 +148,10 @@ int main(int argc, char ** argv)
 
     // Construct Optical Maps from file
     vector<OpticalMapData *> opticalMaps;
-    vector<ContigMapData *> contigMaps;
-    readMaps(opticalMaps, contigMaps);
-    const int numContigs = contigMaps.size();
+    vector<ContigMapData *> allContigMaps;
+    vector<ContigMapData *> forwardContigMaps;
+    readMaps(opticalMaps, allContigMaps, forwardContigMaps);
+    const int numContigs = forwardContigMaps.size();
     //////////////////////////////////////////////////////////////////////////////
 
     //Setup output file streams
@@ -166,7 +175,7 @@ int main(int argc, char ** argv)
         if (reportPeriod==0 || i%reportPeriod == 0)
             cout << "Aligning contig " << i << " of " << numContigs << "\n";
 
-        ContigMapData * pContigMap = contigMaps[i];
+        ContigMapData * pContigMap = forwardContigMaps[i];
         int numFrags = pContigMap->getNumFrags();
 
         if(numFrags <= 2 && !opt::oneToOneMatch)
@@ -193,7 +202,7 @@ int main(int argc, char ** argv)
     // If the permutation test is on, run the permutation test for those
     // contigs that have a match
     //runPermutationTests(&matchResultMap, opticalMaps, opt::numPermutationTrials);
-    runPermutationTests2(&matchResultMap, opticalMaps, contigMaps, opt::numPermutationTrials);
+    runPermutationTests2(&matchResultMap, opticalMaps, forwardContigMaps, opt::numPermutationTrials);
 
     // DONE align
     ///////////////////////////////////////////////////////////////////////
@@ -220,11 +229,12 @@ int main(int argc, char ** argv)
     // Free ContigMapData memory
     {
         vector<ContigMapData *>::iterator vecIter, vecIterEnd;
-        vecIter = contigMaps.begin();
-        vecIterEnd = contigMaps.end();
+        vecIter = allContigMaps.begin();
+        vecIterEnd = allContigMaps.end();
         for(; vecIter!=vecIterEnd; vecIter++)
             delete *vecIter;
-        contigMaps.clear();
+        allContigMaps.clear();
+        forwardContigMaps.clear();
     }
     // Free OpticalMapData memory
     {
@@ -291,9 +301,9 @@ void runPermutationTests(MatchResultMap * pMatchResultMap, const vector<OpticalM
         for (int i=0; i<numTrials; i++)
         {
             const OpticalMapData * pPermutedOpticalMap = permutedOpticalMaps[i];
-            double scoreForward =  matchPermutationTest(pContigMap, pPermutedOpticalMap, true, alignParams);
-            double scoreReverse =  matchPermutationTest(pContigMap, pPermutedOpticalMap, false, alignParams);
-            permutedScores[i] = max(scoreForward, scoreReverse); // This appears to be thread safe.
+            double scoreForward =  matchPermutationTest(pContigMap, pPermutedOpticalMap, alignParams);
+            double scoreReverse =  matchPermutationTest(pContigMap->getTwin(), pPermutedOpticalMap, alignParams);
+            permutedScores[i] = max(scoreForward, scoreReverse);
         }
 
         // Sort permuted scores
@@ -334,8 +344,10 @@ void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<Optical
 
     if (numTrials < 1) return;
 
+    ///////////////////////////////////////////////////////
     // Populate vector of contig fragments
     vector<FragData> contigFrags;
+
     {
     vector<ContigMapData *>::const_iterator i = contigVec.begin();
     const vector<ContigMapData *>::const_iterator e = contigVec.end();
@@ -411,12 +423,20 @@ void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<Optical
         {
             // Match permuted contig to all optical maps
             const ContigMapData * pContigMap = &permutedContigs[j];
+
+            // Create the reverse contig map
+            ContigMapData reverseContigMap;
+            const ContigMapData * pContigMapReverse = &reverseContigMap;
+            vector<FragData> reverseFrags = pContigMap->getFrags();
+            reverse(reverseFrags.begin(), reverseFrags.end());
+            reverseContigMap.setFrags(reverseFrags);
+
             double maxScore = -Constants::INF;
             for (int k=0; k<numMaps; k++)
             {
                 const OpticalMapData * pOpMap = opticalMapList[k];
-                double scoreForward =  matchPermutationTest(pContigMap, pOpMap, true, alignParams);
-                double scoreReverse =  matchPermutationTest(pContigMap, pOpMap, false, alignParams);
+                double scoreForward =  matchPermutationTest(pContigMap, pOpMap, alignParams);
+                double scoreReverse =  matchPermutationTest(pContigMapReverse, pOpMap, alignParams);
                 if (scoreForward > maxScore) maxScore = scoreForward;
                 if (scoreReverse > maxScore) maxScore = scoreReverse;
             }
@@ -483,7 +503,7 @@ void matchContigToOpticalMaps(const ContigMapData * pContigMap, const vector<Opt
     MatchResult * pRevResult = 0;
 
     typedef MatchResult* (*MatchFunc)(const ContigMapData * pContigMap, const OpticalMapData * pOpticalMap,
-                     vector<MatchResult *> * pMatches, bool forward, const AlignmentParams& alignParams);
+                     vector<MatchResult *> * pMatches, const AlignmentParams& alignParams);
 
     MatchFunc matchFunc = localAlignment ? matchLocal : match;
 
@@ -503,14 +523,13 @@ void matchContigToOpticalMaps(const ContigMapData * pContigMap, const vector<Opt
                                         opt::H, opt::T);
 
             // Match in the forward direction
-            bool forward = true;
-            pResult = matchFunc(pContigMap, pOpticalMap, pMatches, forward, alignParams);
+            pResult = matchFunc(pContigMap, pOpticalMap, pMatches, alignParams);
 
             if (!opt::noReverse)
             {
                 // Match in the reverse direction
-                forward = false;
-                pRevResult = matchFunc(pContigMap, pOpticalMap, pMatches, forward, alignParams);
+                ContigMapData * pContigMapReverse = pContigMap->getTwin();
+                pRevResult = matchFunc(pContigMapReverse, pOpticalMap, pMatches, alignParams);
             }
 
             if( pResult || pRevResult)

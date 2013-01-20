@@ -5,7 +5,8 @@
 #include <algorithm>
 #include <iostream>
 
-#define MATCHBUILDER_DEBUG 0
+#define BUILDMATCH_DEBUG 0
+#define FILTER_DEBUG 0
 
 using namespace std;
 
@@ -32,6 +33,10 @@ bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchRe
 {
 
     matches.clear();
+
+    const ContigMapData * pContigMapData = dynamic_cast<const ContigMapData*>(pContigMap);
+    assert(pContigMapData->isForward() == contigIsForward);
+
     const int m = pScoreMatrix->m_; // num rows
     const int n = pScoreMatrix->n_; // num cols
     const int lr = m-1;
@@ -72,7 +77,7 @@ bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchRe
 
         // Check that the match is acceptable. A match is OK if:
         // 1. It passes the filter funtion.
-        // 2. It does not overlap a high scoring match result.
+        // 2. It does not overlap a higher scoring match result.
         bool matchOK = filterFunction(pMatch);
         matchOK = matchOK && !hasOverlap(pMatch, matches.begin(), matches.end());
         if (!matchOK)
@@ -118,7 +123,7 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
     MatchResult * pMatch = new MatchResult(pContigMap->getId(), pOpticalMap->getId(),
                                            pContigMap->getLength(), contigIsForward, score);
 
-    #if MATCHBUILDER_DEBUG > 0
+    #if BUILDMATCH_DEBUG > 0
     std::cout << "Building match for: "
               << pContigMap->getId() << " "
               << pOpticalMap->getId() << " "
@@ -149,12 +154,12 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
         os = po; // optical start index (inclusive, 0 based)
         oe = ti->second; // optical end index (exclusive, 0 based)
 
-        int cStartBp = pContigMap->getStartBp(cs, contigIsForward);
-        int cEndBp = pContigMap->getEndBp(ce-1, contigIsForward); // substract 1 since end is exclusive
+        int cStartBp = pContigMap->getStartBp(cs);
+        int cEndBp = pContigMap->getEndBp(ce-1); // substract 1 since end is exclusive
         bool gapAlignment = (oe == os);
         int opStartBp, opEndBp;
 
-        #if MATCHBUILDER_DEBUG > 0
+        #if BUILDMATCH_DEBUG > 0
         std::cout << "Contig: "
                   << "(" << cs << "," << ce << ")"
                   << " = " << "(" << cStartBp << "," << cEndBp << ")"
@@ -173,7 +178,7 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
             opEndBp = pOpticalMap->getEndBp(oe-1);
         }
 
-        #if MATCHBUILDER_DEBUG > 0
+        #if BUILDMATCH_DEBUG > 0
         std::cout << "Optical: "
                   << "(" << os << "," << oe << ")"
                   << " = " << "(" << opStartBp << "," << opEndBp << ")"
@@ -187,7 +192,7 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
         {
             // Adjust the optical start position
             opStartBp = opEndBp - (cEndBp - cStartBp);
-            #if MATCHBUILDER_DEBUG > 0
+            #if BUILDMATCH_DEBUG > 0
             std::cout << "cs==0 adjustment: "
                       << "(" << os << "," << oe << ")"
                       << " = " << "(" << opStartBp << "," << opEndBp << ")"
@@ -197,7 +202,7 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
         else if ((size_t) ce == contigFrags.size())
         {
             opEndBp = opStartBp + (cEndBp - cStartBp);
-            #if MATCHBUILDER_DEBUG > 0
+            #if BUILDMATCH_DEBUG > 0
             std::cout << "ce==contigFrags.size() adjustment: "
                       << "(" << os << "," << oe << ")"
                       << " = " << "(" << opStartBp << "," << opEndBp << ")"
@@ -207,7 +212,7 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
 
         MatchedChunk chunk = MatchedChunk(os, oe, opStartBp, opEndBp, pOpticalMap,
                                           cs, ce, cStartBp, cEndBp, pContigMap);
-        #if MATCHBUILDER_DEBUG > 0
+        #if BUILDMATCH_DEBUG > 0
         std::cout << "Built Chunk: "
                   << "contig = (" << chunk.getContigStartIndex() << "," << chunk.getContigEndIndex() << ")"
                   << "optical = (" << chunk.getOpticalStartIndex() << "," << chunk.getOpticalEndIndex() << ")"
@@ -242,13 +247,14 @@ bool StandardMatchMaker::filterFunction(const MatchResult * pResult)
                  failContigMissRate ||
                  failContigHitsCheck);
 
-    #if DEBUG_FILTER > 0
+    #if FILTER_DEBUG > 0
     std::cout << "MatchResult: " << *pResult << "\nt"
               << "FailChi2: " << failChi2Filter
               << " FailLengthRatio: " << failLengthRatio
               << " FailContigMissRate: " << failContigMissRate
-              << " FailContigHitsCheck: " << failContigHitsCheck
-              << std::endl;
+              << " FailContigHitsCheck: " << failContigHitsCheck << " ";
+    printAttributes(std::cout, *pResult);
+    std::cout << std::endl;
     #endif
 
     return (!fail);

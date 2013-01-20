@@ -55,7 +55,8 @@ void ContigMapData::calcFragBoundaries()
     }
 }
 
-// Read contig maps from input file
+// Read contig maps from input file.
+// Create ContigMaps both in the forward and reverse direction.
 bool readMaps(const string& fileName, vector<ContigMapData *>& contigVec)
 {
     MapReader reader(fileName);

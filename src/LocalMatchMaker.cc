@@ -174,8 +174,8 @@ MatchResult * LocalMatchMaker::buildMatch(const Index_t& end_index, const ScoreM
         os = po; // optical start index (inclusive, 0 based)
         oe = ti->second; // optical end index (exclusive, 0 based)
 
-        int cStartBp = pContigMap->getStartBp(cs, contigIsForward);
-        int cEndBp = pContigMap->getEndBp(ce-1, contigIsForward); // substract 1 since end is exclusive
+        int cStartBp = pContigMap->getStartBp(cs);
+        int cEndBp = pContigMap->getEndBp(ce-1); // substract 1 since end is exclusive
         bool gapAlignment = (oe == os);
         int opStartBp, opEndBp;
 

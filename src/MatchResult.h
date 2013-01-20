@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <numeric>
+#include <ostream>
 
 #include "ScoreMatrix.h"
 #include "mapTypes.h"
@@ -11,7 +12,6 @@
 #include "Scorer.h"
 #include "MatchedChunk.h"
 
-using namespace std;
 
 typedef std::vector<MatchedChunk> MatchedChunkVec;
 
@@ -28,7 +28,7 @@ class MatchResult {
         reset();
     };
 
-    MatchResult(const string& contigId, const string& opticalId, int contigSize, bool contigIsForward, double score)
+    MatchResult(const std::string& contigId, const std::string& opticalId, int contigSize, bool contigIsForward, double score)
     {
         reset();
         contigId_ = contigId;
@@ -78,11 +78,11 @@ class MatchResult {
     // Attributes
 
     // Contig information
-    string contigId_;
+    std::string contigId_;
     int contigLength_; // total contig length (in bp)
 
     // Alignment location & orientation
-    string chromosomeId_;
+    std::string chromosomeId_;
     int opStartIndex_; // index of first aligned fragment from optical map
     int opEndIndex_; // index of last aligned fragment from optical map (inclusive)
     int opStartBp_; //bp position of the start of the match, relative to the beginning of the entire optical map
@@ -92,7 +92,7 @@ class MatchResult {
     int cStartBp_;
     int cEndBp_;
     bool forward_; // contig oriented forward or backward
-    vector<MatchedChunk> matchedChunkList_;
+    std::vector<MatchedChunk> matchedChunkList_;
 
     // Alignment statistics
     double score_;
@@ -118,16 +118,17 @@ class MatchResult {
     double pval_; // p-value from permutation test
 
     // Alignment Descriptive strings
-    string contigMatchString_;
-    string contigAlignedIndexString_;
-    string contigLostIndexString_;
-    string opticalMatchString_;
-    string opticalAlignedIndexString_;
-    string scoreString_;
+    std::string contigMatchString_;
+    std::string contigAlignedIndexString_;
+    std::string contigLostIndexString_;
+    std::string opticalMatchString_;
+    std::string opticalAlignedIndexString_;
+    std::string scoreString_;
 };
 
-ostream& operator<<(ostream& os, const MatchResult& mr);
+std::ostream& operator<<(std::ostream& os, const MatchResult& mr);
+void printAttributes(std::ostream& os, const MatchResult& mr);
 
-typedef pair<int,int> Index_t;
+typedef std::pair<int,int> Index_t;
 
 #endif
