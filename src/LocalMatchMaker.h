@@ -29,7 +29,7 @@ class LocalMatchMaker : public MatchMaker
 
     bool filterFunction(const MatchResult * pMatch);
     MatchResult * buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
-                             const MapData * pContigMap, bool contigIsForward, set<Index_t>& usedCells);
+                             const ContigMapData * pContigMap, bool contigIsForward, set<Index_t>& usedCells);
 
     Scorer * pScorer_;
     int maxMatches_;

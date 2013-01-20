@@ -18,6 +18,10 @@ bool LocalMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResul
 {
 
     matches.clear();
+
+    const ContigMapData * pContigMapData = dynamic_cast<const ContigMapData*>(pContigMap);
+    assert(pContigMapData->isForward() == contigIsForward);
+
     const int m = pScoreMatrix->m_; // num rows
     const int n = pScoreMatrix->n_; // num cols
     const ScoreElement_t * pE;
@@ -56,7 +60,7 @@ bool LocalMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResul
     {
         if ((maxMatches_ >= 0) && matches.size() == (size_t) maxMatches_) break;
         Index_t end_index = iter->second;
-        MatchResult * pMatch = buildMatch(end_index, pScoreMatrix, pOpticalMap, pContigMap, contigIsForward, usedCells);
+        MatchResult * pMatch = buildMatch(end_index, pScoreMatrix, pOpticalMap, pContigMapData, contigIsForward, usedCells);
         if (pMatch == NULL) continue;
         pScorer_->scoreMatchResult(pMatch);
         matches.push_back(pMatch);
@@ -72,7 +76,7 @@ bool LocalMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResul
 // have already been used in a higher scoring alignment.
 // If the Match is not acceptable, return NULL
 MatchResult * LocalMatchMaker::buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
-                                          const MapData * pContigMap, bool contigIsForward,
+                                          const ContigMapData * pContigMap, bool contigIsForward,
                                           set<Index_t>& usedCells)
 {
 
@@ -139,12 +143,13 @@ MatchResult * LocalMatchMaker::buildMatch(const Index_t& end_index, const ScoreM
     }
     /////////////////////////////////////
 
-    MatchResult * pMatch = new MatchResult(pContigMap->getId(), pOpticalMap->getId(), 
+    const ContigMapData * pContigMapForward = contigIsForward ? pContigMap : pContigMap->getTwin();
+    MatchResult * pMatch = new MatchResult(pContigMapForward->getId(), pOpticalMap->getId(), 
                                            pContigMap->getLength(), contigIsForward, score);
 
     #if MATCHBUILDER_DEBUG > 0
     std::cout << "Building match for: "
-              << pContigMap->getId() << " "
+              << pContigMapForward->getId() << " "
               << pOpticalMap->getId() << " "
               << "forward: " << contigIsForward
               << " end_index: " << end_index.first << " , " << end_index.second

@@ -10,28 +10,26 @@ import numpy as np
 import cPickle
 from MatchResult import MatchResult
 
-############################################
-# Class to represent data about a contig
-class ContigData:
-    # Construct contigData from two lines of insilico file
-    def __init__(self, lines):
-        l1,l2 = lines
 
-        # Read contig data from line 1
-        self.contigId,length,numSites = l1.split()
-        self.length = int(length); self.numSites = int(numSites)
+##############################################
+# Construct a Map from a line
+class MapData(object):
+    def __init__(self, line):
+        fields = line.strip().split()
+        self.mapId = fields[0]
+        self.length = int(fields[1])
+        self.numFrags = int(fields[2])
+        self.frags = [int(f) for f in fields[3:]]
+        assert(len(self.frags)==self.numFrags)
 
-        # Read contig data from line 2
-        sites = [s.split(',')[0] for s in l2.split(';')]
-        self.sites = np.array([int(s.strip()) for s in sites if len(s)])
-        assert self.numSites == self.sites.shape[0]
-    
-        # Compute additional information about the contig
-        self.frag = np.zeros(self.numSites + 1)
-        self.frag[1:-1] = self.sites[1:] - self.sites[0:-1]
-        self.frag[0] = self.sites[0] # first fragment
-        self.frag[-1] = self.length-self.sites[-1] # last fragment
-        self.numFrags = self.frag.shape[0]
+###############################################
+def readMapFile(fname):
+    fin = open(fname)
+    maps = [MapData(l) for l in fin]
+    fin.close()
+    mapDict = dict((m.mapId, m) for m in maps)
+    return mapDict
+
 
 ############################################
 # Print a contig (type contigData)
@@ -44,36 +42,15 @@ def printContigFrags(contig):
 
 
 ############################################
-# Read a .opt optical map file
-# Return a numpy array. Column 1 are fraglengths, col 2 are sd (in bp)
+# Read an optical map file
 def readOpticalMap(mapFile):
-    fin = open(mapFile)
-    data = []
-    for l in fin:
-        fields = l.split()
-        s = fields[0].strip()
-        sd = fields[1].strip() if len(fields)>1 else -1.0
-        data.append([float(s),float(sd)])
-    fin.close()
-    data = np.array(data)
-    separators = data[:,0] == 0.001
-    fragData = 1000*data[~separators,:] #Convert to bp
-    return fragData
+    return readMapFile(mapFile)
 
 ############################################
 # Read an insilico file and return a dictionary
 # of contigIds to ContigData
 def readSilicoFile(fileName):
-    fin = open(fileName)
-    lines = fin.read().split('\n')
-    fin.close()
-    linePairs = [(lines[i-1], lines[i]) for i in range(1,len(lines),2)]
-    contigDict = {}
-    for lp in linePairs:
-        cd = ContigData(lp)
-        assert cd not in contigDict # Should be no duplicate contigs
-        contigDict[cd.contigId] = cd
-    return contigDict
+    return readMapFile(fileName)
 
 ############################################
 # Read pickle of list of MatchResults with

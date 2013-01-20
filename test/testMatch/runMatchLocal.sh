@@ -8,8 +8,7 @@ THREADS=1
 
 
 # RELEASE
-$MATCH_BIN_RELEASE --output test100WithError_Local --local --pvalue=0.05 --sdMin=4 --sdMax=4 --numPermutationTrials $PTRIALS --numThreads $THREADS 100_WithError.silico 100.opt
-$MATCH_BIN_RELEASE --output test100NoError_Local --local --pvalue=0.05 --sdMin=4 --sdMax=4 --numPermutationTrials $PTRIALS --numThreads $THREADS 100_NoError.silico 100.opt
+$MATCH_BIN_RELEASE --output test100_local --local --pvalue=0.05 --sdMin=4 --sdMax=4 --numPermutationTrials $PTRIALS --numThreads $THREADS contigs.silico map100.opt
 
 # TEST CONTIG1
 #$MATCH_BIN_DEBUG --output testContig1 --local --pvalue=0.05 --sdMin=4 --sdMax=4 --numPermutationTrials $PTRIALS --numThreads $THREADS contig1.silico 100.opt

@@ -72,7 +72,7 @@ bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchRe
     {
         if ((maxMatches_ >= 0) && matches.size() == (size_t) maxMatches_) break;
         Index_t end_index = iter->second;
-        MatchResult * pMatch = buildMatch(end_index, pScoreMatrix, pOpticalMap, pContigMap, contigIsForward);
+        MatchResult * pMatch = buildMatch(end_index, pScoreMatrix, pOpticalMap, pContigMapData, contigIsForward);
         if (pMatch == NULL) continue;
 
         // Check that the match is acceptable. A match is OK if:
@@ -95,7 +95,7 @@ bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchRe
 
 
 MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
-                                             const MapData * pContigMap, bool contigIsForward)
+                                             const ContigMapData * pContigMap, bool contigIsForward)
 {
 
     const vector<FragData>& contigFrags = pContigMap->getFrags();
@@ -120,7 +120,9 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
     const vector<Index_t>::iterator tb = trail.begin();
     const vector<Index_t>::iterator te = trail.end();
 
-    MatchResult * pMatch = new MatchResult(pContigMap->getId(), pOpticalMap->getId(),
+    // Use the id of forward contig map
+    const ContigMapData * pContigMapForward = contigIsForward ? pContigMap : pContigMap->getTwin();
+    MatchResult * pMatch = new MatchResult(pContigMapForward->getId(), pOpticalMap->getId(),
                                            pContigMap->getLength(), contigIsForward, score);
 
     #if BUILDMATCH_DEBUG > 0

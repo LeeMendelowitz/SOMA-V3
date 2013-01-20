@@ -26,7 +26,7 @@ class StandardMatchMaker : public MatchMaker
 
     private:
     MatchResult * buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
-                             const MapData * pContigMap, bool contigIsForward);
+                             const ContigMapData * pContigMap, bool contigIsForward);
     bool filterFunction(const MatchResult * pMatch);
     void scoreMatch(MatchResult * pMatch); // Fill in the score attributes of the MatchResult
 
