@@ -1,3 +1,4 @@
 # ignore build files
 bin/match
 bin/match_d
+*.pyc
