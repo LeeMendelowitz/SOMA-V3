@@ -7,13 +7,13 @@
 
 # Some code to generate random contig maps by sampling 
 # with replacement from a distribution of contig fragments.
-import importSomaData
 import numpy as np
 import sys
+import SOMAMap
 
 ##############################################################################
 # Class to store fragments
-class FragDataBase(object):
+class FragDatabase(object):
 
     def __init__(self, *args, **kwargs):
         self.interiorFrags = np.array([])
@@ -40,7 +40,7 @@ class FragDataBase(object):
         return self.interiorFrags[ind]
 
     def addFragsFromMap(self, mapFileName):
-        mapDict = importSomaData.readMapFile(mapFileName)
+        mapDict = SOMAMap.readMaps(open(mapFileName))
         for mapId, mapObj in mapDict.iteritems():
             frags = mapObj.frags
             if not frags:

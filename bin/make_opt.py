@@ -13,29 +13,7 @@
 
 import sys
 import re
-
-#############################################################################################
-class OpticalMapData:
-    def __init__(self, name, frags, fragSD, enzyme):
-        self.name = name
-        self.frags = frags
-        self.length = sum(frags)
-        self.fragSD = fragSD
-        self.enzyme = enzyme
-        if self.fragSD is not None:
-            assert(len(self.fragSD)==len(self.frags))
-
-    def writeMap(self, handle):
-        f = handle
-
-        fields = [self.name,
-                  str(self.length),
-                  str(len(self.frags))]
-        fields.extend(str(frag) for frag in self.frags)
-
-        outS = '\t'.join(fields) + '\n'
-        f.write(outS)
-
+from SOMAMap import SOMAMap
 
 #############################################################################################
 # Read an optical map in the Schwartz format
@@ -57,7 +35,7 @@ def readMapDataSchwartz(filename):
         fields = line2.strip().split()
         enzyme = fields[0]
         fragLengths = [int(1000.0*float(field)) for field in fields[2:]] # Convert to bp
-        omaps.append(OpticalMapData(chromName, fragLengths, None, enzyme))
+        omaps.append(SOMAMap(mapId = chromName, frags = fragLengths, enzyme = enzyme))
         print 'Read map from chromosome %s with enzyme %s and %i fragments'%(chromName, enzyme, len(fragLengths))
     fin.close()
     return omaps
@@ -104,9 +82,8 @@ def readMapDataXML(fileName):
                 fragLengths.append(fragLength)
                 fragSDs.append(fragSD)
         elif endMapMatch:
-            # Create the OpticalMapData and add to the list
             print 'Creating optical map with name %s enzyme %s and %i fragments'%(mapName, enzyme, len(fragLengths))
-            opticalMapList.append(OpticalMapData(mapName, fragLengths, fragSD, enzyme))
+            opticalMapList.append(SOMAMap(mapId = mapName, frags = fragLengths, fragSD = fragSD, enzyme = enzyme))
             fragLengths = []
             fragSDs = []
             enzyme = ''
@@ -119,11 +96,3 @@ def readMapDataXML(fileName):
     assert(len(enzyme)==0)
     assert(len(mapName)==0)
     return opticalMapList
-
-#############################################################################################
-# Write a list of optical maps
-def writeMaps(opticalMapDataList, outFileName):
-    fout = open(outFileName, 'w')
-    for opMap in opticalMapDataList:
-        opMap.writeMap(fout)
-    fout.close()

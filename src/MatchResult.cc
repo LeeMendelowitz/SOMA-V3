@@ -75,11 +75,13 @@ void MatchResult::buildAlignmentAttributes()
     typedef vector<MatchedChunk>::const_iterator ChunkIter;
     const ChunkIter mb = matchedChunkList_.begin();
     const ChunkIter me = matchedChunkList_.end();
+    //const ChunkIter mLast = me-1;
 
 
     for (ChunkIter mi = mb; mi != me; mi++)
     {
         bool firstAlignment = (mi == mb);
+        //bool lastAlignment = (mi == mLast);
         int cl = mi->getContigMatchLengthBp();
         int ol = mi->getOpticalMatchLengthBp();
 
@@ -114,8 +116,14 @@ void MatchResult::buildAlignmentAttributes()
             opticalHits_ += 1;
         }
 
-        contigHits_ += 1;
-        opticalHits_ += 1;
+        // Add the site at the right boundary of this matched chunk. The chunk ends with a 
+        // restriction site unless it is the last fragment in contig and the last contig fragment
+        // is considered a boundary chunk
+        if( ! (mi->isBoundaryChunk() && mi->getContigStartIndex() > 0) )
+        {
+            contigHits_ += 1;
+            opticalHits_ += 1;
+        }
     }
     
     totalHits_ = contigHits_ + opticalHits_;

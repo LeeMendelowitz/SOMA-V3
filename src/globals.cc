@@ -24,6 +24,7 @@ namespace opt
 //  bool   matchFragmentOnce = false;
     bool   noReverse = false;
     bool   oneToOneMatch = false;
+    bool   useBoundaries = true;
 //   bool   allowGaps = false;
     double pThreshold = 0.05;
     string outputPrefix = "output";

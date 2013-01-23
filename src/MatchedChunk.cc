@@ -3,7 +3,9 @@
 
 // Constructor
 MatchedChunk::MatchedChunk(int opStart, int opEnd, int opStartBp, int opEndBp, const MapData* pOpticalMap,
-                           int cStart, int cEnd, int cStartBp, int cEndBp, const MapData* pContigMap)
+                           int cStart, int cEnd, int cStartBp, int cEndBp, const MapData* pContigMap,
+                           bool isBoundaryChunk) :
+                           isBoundaryChunk_(isBoundaryChunk)
 {
     // Set optical coordinates
     opMapCoord_ = MapCoord(pOpticalMap, opStart, opEnd);
@@ -103,9 +105,11 @@ int MatchedChunk::getNumContigFrags() const
 // Check if this match includes the first or last fragment in a contig
 bool MatchedChunk::isBoundaryChunk() const
 {
-    const MapData * pContigMap = cMapCoord_.getMap();
-    const vector<FragData>& cFrags = pContigMap->getFrags();
-    return (cMapCoord_.getStart() == 0) || ((size_t) cMapCoord_.getEnd() == cFrags.size());
+    return isBoundaryChunk_;
+
+//    const MapData * pContigMap = cMapCoord_.getMap();
+//    const vector<FragData>& cFrags = pContigMap->getFrags();
+//    return (cMapCoord_.getStart() == 0) || ((size_t) cMapCoord_.getEnd() == cFrags.size());
 }
 
 //

@@ -29,7 +29,7 @@
 
 #define DEBUG_MATCH 0
 #define DEBUG_FILTER 0
-#define DEBUG_READMAPS 1
+#define DEBUG_READMAPS 0
 
 using namespace std;
 using namespace Globals; // from globals.h

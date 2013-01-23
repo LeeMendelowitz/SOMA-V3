@@ -18,6 +18,7 @@ import summarizeContigStatus
 import createScaffolds
 import make_opt
 import make_silico
+import SOMAMap
 
 CWD = os.getcwd()
 SOMA_BIN_DIR = CWD
@@ -41,7 +42,8 @@ def getBaseName(inFile):
 
 def runSoma(opticalMapFile, contigFile, pfx):
 
-    silicoFileOut = pfx + '.silico'
+    silicoFileOut = '%s.silico'%pfx
+    opticalMapFileOut = '%s.opt'%getBaseName(opticalMapFile)
 
     ###########################################################################
     print '\n'+'*'*50
@@ -63,15 +65,9 @@ def runSoma(opticalMapFile, contigFile, pfx):
     # Optical maps for chromosomes 
     # Remove all white space from restriction map names
     for opMap in opMapList:
-        oldName = opMap.name
-        opMap.name = ''.join(oldName.split())
-
-    opMapFiles = []
-    for opMap in opMapList:
-        outFileName = opMap.name + '.opt'
-        make_opt.writeMapDataSingleMap(opMap, outFileName)
-        opMapFiles.append(outFileName)
-
+        oldName = opMap.mapId
+        opMap.mapId = ''.join(oldName.split())
+    SOMAMap.writeMaps(opMapList, opticalMapFileOut)
     ###########################################################################
     print '\n'+'*'*50
     print 'Creating in-silico optical map using contig file %s and enzyme %s'%(contigFile, enzyme)
@@ -97,7 +93,7 @@ def runSoma(opticalMapFile, contigFile, pfx):
     '--siteCostContig', str(siteCostContig),
     '--siteCostOptical', str(siteCostOptical)]
     cmd.append(silicoFileOut)
-    cmd.extend(opMapFiles)
+    cmd.append(opticalMapFileOut)
     print 'CMD: ',' '.join(cmd)
     retCode = subprocess.call(cmd)
 

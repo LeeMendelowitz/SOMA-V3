@@ -213,30 +213,35 @@ MatchResult * LocalMatchMaker::buildMatch(const Index_t& end_index, const ScoreM
         // For boundary cases where the matched chunk includes the first or last contig fragment,
         // the chunk is not bounded by two matched restriction sites. Adjust the optical start/end positions
         // accordingly.
-        if (cs == 0)
+        if (opt::useBoundaries)
         {
-            // Adjust the optical start position
-            opStartBp = opEndBp - (cEndBp - cStartBp);
-            #if MATCHBUILDER_DEBUG > 0
-            std::cout << "cs==0 adjustment: "
-                      << "(" << os << "," << oe << ")"
-                      << " = " << "(" << opStartBp << "," << opEndBp << ")"
-                      << std::endl;
-            #endif
-        }
-        else if ((size_t) ce == contigFrags.size())
-        {
-            opEndBp = opStartBp + (cEndBp - cStartBp);
-            #if MATCHBUILDER_DEBUG > 0
-            std::cout << "ce==contigFrags.size() adjustment: "
-                      << "(" << os << "," << oe << ")"
-                      << " = " << "(" << opStartBp << "," << opEndBp << ")"
-                      << std::endl;
-            #endif
+            if (cs == 0)
+            {
+                // Adjust the optical start position
+                opStartBp = opEndBp - (cEndBp - cStartBp);
+                #if MATCHBUILDER_DEBUG > 0
+                std::cout << "cs==0 adjustment: "
+                          << "(" << os << "," << oe << ")"
+                          << " = " << "(" << opStartBp << "," << opEndBp << ")"
+                          << std::endl;
+                #endif
+            }
+            else if ((size_t) ce == contigFrags.size())
+            {
+                opEndBp = opStartBp + (cEndBp - cStartBp);
+                #if MATCHBUILDER_DEBUG > 0
+                std::cout << "ce==contigFrags.size() adjustment: "
+                          << "(" << os << "," << oe << ")"
+                          << " = " << "(" << opStartBp << "," << opEndBp << ")"
+                          << std::endl;
+                #endif
+            }
         }
 
+        bool isBoundaryChunk = opt::useBoundaries && ( (cs==0) || ((size_t) ce == contigFrags.size()));
+
         MatchedChunk chunk = MatchedChunk(os, oe, opStartBp, opEndBp, pOpticalMap,
-                                          cs, ce, cStartBp, cEndBp, pContigMap);
+                                          cs, ce, cStartBp, cEndBp, pContigMap, isBoundaryChunk);
         matchedChunkList.push_back(chunk);
         pc = ce; po = oe;
     }

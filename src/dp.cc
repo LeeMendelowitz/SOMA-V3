@@ -102,7 +102,7 @@ ScoreMatrix_t * createScoreMatrix1(const vector<FragData>& contigFrags, const ve
                 for (int l = j-1; l >= j1; l--) // Loop over optical frags for alignment block
                 {
                     oFragLength += opticalFrags[l].size_;
-                    boundaryFrag = (k==0) || (i==m-1);
+                    boundaryFrag = ((k==0) || (i==m-1)) && opt::useBoundaries;
                     pPrev = &pScoreMatrix->d_[k*n+l];
                     if (pPrev->score_ > -Constants::INF)
                     {
@@ -206,7 +206,7 @@ ScoreMatrix_t * createScoreMatrix2(const vector<FragData>& contigFrags, const ve
                 for (int l = j-1; l >= j1; l--) // Loop over optical frags for alignment block
                 {
                     obB = oB + l;
-                    boundaryFrag = (k==0) || (i==m-1);
+                    boundaryFrag = ((k==0) || (i==m-1)) && opt::useBoundaries;
                     pPrev = &pScoreMatrix->d_[k*n+l];
                     if (pPrev->score_ > -Constants::INF)
                     {
@@ -283,7 +283,7 @@ ScoreMatrix_t * createLocalScoreMatrix(const vector<FragData>& contigFrags, cons
                 for (int l = j-1; l >= j1; l--) // Loop over optical frags for alignment block
                 {
                     oFragLength += opticalFrags[l].size_;
-                    boundaryFrag = (k==0) || (i==m-1);
+                    boundaryFrag = ((k==0) || (i==m-1)) && opt::useBoundaries;
                     if (boundaryFrag) continue;
                     pPrev = &pScoreMatrix->d_[k*n+l];
                     nSitesContig = i-k-1;

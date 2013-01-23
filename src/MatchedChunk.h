@@ -19,9 +19,11 @@ class MatchedChunk
 
     // Constructor
     MatchedChunk(int opStart, int opEnd, int opStartBp, int opEndBp, const MapData* pOpticalMap,
-                int cStart, int cEnd, int cStartBp, int cEndBp, const MapData* pContigMap);
+                int cStart, int cEnd, int cStartBp, int cEndBp, const MapData* pContigMap,
+                bool isBoundaryChunk);
 
     void setScore(const Score& score) {score_ = score;}
+    void setIsBoundaryChunk(bool val) {isBoundaryChunk_ = val;}
 
     const Score& getScore() const { return score_; }
     int getNumOpticalMisses() const;
@@ -56,6 +58,7 @@ class MatchedChunk
     SeqCoord opSeqCoord_; // optical bp coordinates
     SeqCoord cSeqCoord_; // contig bp coordinates
     Score score_; // alignment score
+    bool isBoundaryChunk_;
 };
 
 #endif

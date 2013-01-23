@@ -31,6 +31,7 @@ argpOption options[] = {
 //    {"allowFalseCuts", 0, 0, 0, "Allow false cuts in optical map",0},
     {"noReverse", 0, 0, 0, "Do not match reverse of contig to optical map",0},
     {"oneToOneMatch", 0, 0, 0, "Match the entire contig to the entire optical map",0},
+    {"noBoundaries", 0, 0, 0, "Do not treat the first/last contig restriction fragment as a boundary fragment",0},
 //	{"matchFragmentOnce", 0, 0, 0, "greedily match at most one contig to an optical fragment. Default is to allow multiple matches",0},
 //	{"allowGaps", 0, 0, 0, "Allow gaps in alignments.",0},
 	{"sdMin", 0, "val", 0, "Initial value for the standard deviation threshold. Default: 4",0},
@@ -40,6 +41,7 @@ argpOption options[] = {
     {"siteCostOptical", 0, "value", 0, "cost for a single unsed optical map restriction site in an alignment. Default: 5.0",0},
     {"maxMissRateContig", 0, "value", 0, "Maximum allowed fraction of contig restriction sites to be unused in an alignment. Default: 0.1",0},
     {"maxMatchesPerContig", 0, "value", 0, "Maximum matches reported per contig. Default: 5", 0},
+    {"minSiteHits", 0, "value", 0, "Minimum number of aligned restriction sites for a match. Default: 5", 0},
     //{"falseCutRate", 0, "value", 0, "Average number of false cuts per bp in optical map. Note: If provided, allowFalseCuts must be provided.",0},
     {"numPermutationTrials", 0, "value", 0, "Number of trials for permutation test. Default: 0 (i.e. no test)",0},
     {"numThreads", 0, "value", 0, "Number of threads. Default: 1",0},
@@ -122,6 +124,7 @@ void ArgParser::printArgs()
 //              << "matchFragmentOnce: " << opt::matchFragmentOnce << "\n"
               << "noReverse: " << opt::noReverse << "\n"
               << "oneToOneMatch: " << opt::oneToOneMatch << "\n"
+              << "useBoundaries: " << opt::useBoundaries << "\n"
 //              << "allowGaps: " << opt::allowGaps << "\n"
               << "sdMin: " << opt::sdMin << "\n"
               << "sdMax: " << opt::sdMax << "\n"
@@ -133,6 +136,7 @@ void ArgParser::printArgs()
    //           << "falseCutRate: " << opt::falseCutRate << "\n"
               << "maxMatchesPerContig: " << opt::maxMatchesPerContig << "\n"
               << "maxMissRateContig: " << opt::maxMissRateContig << "\n"
+              << "minSiteHits: " << opt::minContigHits << "\n"
               << "numPermutationTrials: " << opt::numPermutationTrials << "\n"
               << "numThreads: " << opt::numThreads << "\n"
               << "**********************************************\n";
@@ -158,6 +162,8 @@ error_t parse_opt(int key, char *arg, struct argp_state *state)
         opt::noReverse = true;
     } else if (key == ap->getKey("oneToOneMatch") ) {
         opt::oneToOneMatch = true;
+    } else if (key == ap->getKey("noBoundaries") ) {
+        opt::useBoundaries = false;
     } else if (key == ap->getKey("sdMin")) {
         opt::sdMin = atoi(arg);
     } else if (key == ap->getKey("sdMax")) {
@@ -176,6 +182,8 @@ error_t parse_opt(int key, char *arg, struct argp_state *state)
         opt::maxMissRateContig = atof(arg);
     } else if (key == ap->getKey("maxMatchesPerContig")) {
         opt::maxMatchesPerContig = atoi(arg);
+    } else if (key == ap->getKey("minSiteHits")) {
+        opt::minContigHits = atoi(arg);
     } else if (key == ap->getKey("numPermutationTrials")) {
         opt::numPermutationTrials = atoi(arg);
     } else if (key == ap->getKey("numThreads")) {

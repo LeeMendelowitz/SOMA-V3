@@ -26,6 +26,7 @@ namespace opt
 //    extern bool   matchFragmentOnce;
     extern bool noReverse;
     extern bool oneToOneMatch;
+    extern bool useBoundaries; // if true, treat first and last contig fragment as boundary fragment (bounded by only 1 restriction site, instead of 2).
 //    extern bool allowGaps;
     extern double pThreshold;
     extern string outputPrefix;
