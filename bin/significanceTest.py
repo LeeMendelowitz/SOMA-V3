@@ -48,3 +48,26 @@ class FragDatabase(object):
             self.addFrags(frags)
             if len(frags) > 2:
                 self.addInteriorFrags(frags[1:-1])
+
+
+################################################################################
+# Class to store null distribution of contig chunk scores
+class ChunkScoreNullDistribution(object):
+    def __init__(self, chunkScores):
+        self.chunkScores = np.sort(chunkScores)
+        self.bootstrapScores = {}
+        self.numSamples = 10000
+
+    def computeScoreDistribution(self, numChunks):
+        if numChunks in self.bootstrapScores:
+            return self.bootstrapScores[numChunks]
+        N = self.chunkScores.shape[0]
+        scores = np.array( [np.sum(self.chunkScores[np.random.randint(0, N, numChunks)]) for i in xrange(self.numSamples)] )
+        self.bootstrapScores[numChunks] = np.sort(scores)
+        return scores
+
+    def getPercentageBetter(self, numChunks, score):
+        scores = self.computeScoreDistribution(numChunks)
+        numBetter = np.sum(scores >= score)
+        fracBetter = float(numBetter)/scores.shape[0]
+        return fracBetter

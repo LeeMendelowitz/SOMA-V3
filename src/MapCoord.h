@@ -48,7 +48,7 @@ class MapCoord
     {
         const std::vector<FragData>& frags = pMap_->getFrags();
         const size_t N = frags.size();
-        if ((start_ < 0) || ((size_t) start_ >= N))
+        if ((start_ < 0) || ((size_t) start_ > N))
         {
             std::ostringstream oss;
             oss << "Invalid MapCoord: "

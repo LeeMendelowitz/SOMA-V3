@@ -12,6 +12,7 @@ import glob
 import re
 import os
 import parallelProcess as pp
+from collections import defaultdict
 import cPickle
 from operator import attrgetter
 import matplotlib.pyplot as plt
@@ -61,6 +62,17 @@ def parseMatchFileXML(filename):
     matchCount = len(matchResultList)
     print 'File: %s. Read %i matches.'%(filename, matchCount)
     return matchResultList
+
+
+#######################################################################
+# Collect match results by contigId
+def collectMatchResultsByContig(ml):
+    matchDict = defaultdict(list)
+    for mr in ml:
+        matchDict[mr.contigId].append(mr)
+    for contigId in matchDict.iterkeys():
+        matchDict[contigId] = sorted(matchDict[contigId], key = lambda mr: mr.score)[::-1]
+    return matchDict
 
 LENGTH_RATIO = 0.90 # A MatchResults length ratio must be greater than or equal to this
 MISS_RATE = 1.0 # This fraction of missed sites must be less than this

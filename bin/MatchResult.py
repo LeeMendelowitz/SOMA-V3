@@ -225,3 +225,10 @@ class MatchResult:
         # Fancy python string formatting:
         for c, o in zip(cStrings, oStrings):
             fout.write('{0:^{width1}} | {1:^{width2}}\n'.format(c, o, width1=cw, width2=ow))
+
+
+    ##################################
+    # Return the numerical scores for each matched chunk
+    def getChunkScores(self):
+        sumChunkScores = lambda mc: mc.score.contig + mc.score.optical + mc.score.sizing
+        return [sumChunkScores(mc) for mc in mr.alignment if not mc.isContigGap]
