@@ -53,3 +53,9 @@ std::ostream& operator<<(std::ostream& os, const ScoreElement_t * pE)
     os << std::left << oss.str();
     return os;
 }
+
+std::ostream& operator <<(std::ostream& os, const Index_t& index)
+{
+    os << "( " << index.first << "," << index.second << " )";
+    return os;
+}

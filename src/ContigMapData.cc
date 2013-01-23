@@ -1,9 +1,13 @@
 #include <algorithm>
+#include <iostream>
 
 #include "ContigMapData.h"
 #include "MapReader.h"
 #include "utils.h"
 
+#define READMAPS_DEBUG 0
+
+void printMap(std::ostream& os, const ContigMapData * pMap);
 
 // Default Constructor
 ContigMapData::ContigMapData() :
@@ -27,10 +31,11 @@ void ContigMapData::setFrags(const vector<FragData>& frags)
 
     if (!frags_.empty())
     {
-        FragData& fd = *frags_.begin();
-        fd.firstOrLastFrag_ = true;
-        fd = *(frags_.end() - 1);
-        fd.firstOrLastFrag_ = true;
+        FragData * pFragData = &(*frags_.begin());
+        pFragData->firstOrLastFrag_ = true;
+
+        pFragData = &*(frags_.end() - 1);
+        pFragData->firstOrLastFrag_ = true;
     }
 }
 
@@ -78,8 +83,30 @@ bool readMaps(const string& fileName, vector<ContigMapData *>& contigVec)
         contigVec.push_back(pForward);
         contigVec.push_back(pReverse);
         success = true;
+
+        #if READMAPS_DEBUG > 0
+        printMap(std::cout, pForward);
+        printMap(std::cout, pReverse);
+        #endif
     }
     return success;
+}
+
+
+void printMap(std::ostream& os, const ContigMapData * pMap)
+{
+    os << "Created ContigMap: " 
+              << pMap->getId()
+              << " frags: ";
+
+    const vector<FragData>& frags = pMap->getFrags();
+    for(vector<FragData>::const_iterator iter = frags.begin();
+                                         iter != frags.end();
+                                         iter++)
+    {
+        os << iter->size_ << " ";
+    }
+    os << std::endl;
 }
 
 

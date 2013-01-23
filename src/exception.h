@@ -1,14 +1,14 @@
 #ifndef EXCEPTION_H
 #define EXCEPTION_H
-#include <exception>
 
-using namespace std;
+#include <exception>
+#include <string>
 
 // Generic Exception class
-class Exception : public exception
+class Exception : public std::exception
 { 
     public:
-    Exception(const string& msg) throw(): msg_(msg) {};
+    Exception(const std::string& msg) throw(): msg_(msg) {};
     ~Exception() throw() {};
 
     virtual const char * what() const throw()
@@ -17,7 +17,7 @@ class Exception : public exception
     }
 
     private:
-        string msg_;
+        std::string msg_;
 };
 
 #endif

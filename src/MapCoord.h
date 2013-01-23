@@ -4,6 +4,9 @@
 #define MAPCOORD_H
 
 #include "MapData.h"
+#include "exception.h"
+
+#include <sstream>
 
 class MapCoord
 {
@@ -43,12 +46,39 @@ class MapCoord
 
     std::vector<FragData>::const_iterator getB() const
     {
-        return pMap_->getFrags().begin() + start_;
+        const std::vector<FragData>& frags = pMap_->getFrags();
+        const size_t N = frags.size();
+        if ((start_ < 0) || ((size_t) start_ >= N))
+        {
+            std::ostringstream oss;
+            oss << "Invalid MapCoord: "
+                << "map: " << pMap_->getId() << " "
+                << "numFrags: " << N
+                << " start_: " << start_
+                << " end_: " << end_;
+            throw( Exception(oss.str()) );
+        }
+
+        return frags.begin() + start_;
+        //return pMap_->getFrags().begin() + start_;
     }
 
     std::vector<FragData>::const_iterator getE() const
     {
-        return pMap_->getFrags().begin() + end_;
+        const std::vector<FragData>& frags = pMap_->getFrags();
+        const size_t N = frags.size();
+        if ((end_ < 0) || ((size_t) end_ > N))
+        {
+            std::ostringstream oss;
+            oss << "Invalid MapCoord: "
+                << "map: " << pMap_->getId() << " "
+                << "numFrags: " << N
+                << " start_: " << start_
+                << " end_: " << end_;
+            throw( Exception(oss.str()) );
+        }
+        return frags.begin() + end_;
+        //return pMap_->getFrags().begin() + end_;
     }
 
     const MapData * getMap() const { return pMap_; }

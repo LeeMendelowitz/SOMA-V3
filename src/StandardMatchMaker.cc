@@ -1,12 +1,14 @@
 #include "StandardMatchMaker.h"
 #include "MatchResult.h"
 #include "MatchedChunk.h"
+#include "debugUtils.h"
 
 #include <algorithm>
 #include <iostream>
 
 #define BUILDMATCH_DEBUG 0
 #define FILTER_DEBUG 0
+#define MAKEMATCH_DEBUG 0
 
 using namespace std;
 
@@ -72,6 +74,12 @@ bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchRe
     {
         if ((maxMatches_ >= 0) && matches.size() == (size_t) maxMatches_) break;
         Index_t end_index = iter->second;
+
+        #if MAKEMATCH_DEBUG > 0
+        std::cout << "Making match for index: " << end_index <<
+                     " score: " << iter->first << std::endl;
+        #endif
+
         MatchResult * pMatch = buildMatch(end_index, pScoreMatrix, pOpticalMap, pContigMapData, contigIsForward);
         if (pMatch == NULL) continue;
 
@@ -84,6 +92,11 @@ bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchRe
             delete pMatch;
         else
         {
+
+            #if MAKEMATCH_DEBUG > 0
+            std::cout << "Accepted Match!" << std::endl; 
+            #endif
+
             pScorer_->scoreMatchResult(pMatch);
             matches.push_back(pMatch);
             foundMatch = true;
@@ -126,12 +139,20 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
                                            pContigMap->getLength(), contigIsForward, score);
 
     #if BUILDMATCH_DEBUG > 0
-    std::cout << "Building match for: "
+    std::cout << "\n\n\nBuilding match for: "
               << pContigMap->getId() << " "
               << pOpticalMap->getId() << " "
-              << "forward: " << contigIsForward
-              << "end_index: " << end_index.first << " , " << end_index.second
+              << " forward: " << contigIsForward
+              << " end_index: " << end_index.first << " , " << end_index.second
               << std::endl;
+
+    // Print the contig fragments
+    std::cout << "Contig Frags: " ;
+    for(vector<FragData>::const_iterator iter = contigFrags.begin();
+                                         iter != contigFrags.end();
+                                         iter++)
+    { std::cout << iter->size_ << " "; }
+    std::cout << std::endl;
     # endif
 
     // Build the vector of matched fragments. Add them directory to the match.
@@ -164,7 +185,7 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
         #if BUILDMATCH_DEBUG > 0
         std::cout << "Contig: "
                   << "(" << cs << "," << ce << ")"
-                  << " = " << "(" << cStartBp << "," << cEndBp << ")"
+                  << " = " << "(" << cStartBp << "," << cEndBp << "=" << cEndBp - cStartBp << ")"
                   << std::endl;
         #endif
         if (gapAlignment)
@@ -183,7 +204,7 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
         #if BUILDMATCH_DEBUG > 0
         std::cout << "Optical: "
                   << "(" << os << "," << oe << ")"
-                  << " = " << "(" << opStartBp << "," << opEndBp << ")"
+                  << " = " << "(" << opStartBp << "," << opEndBp << "=" << opEndBp - opStartBp <<  ")"
                   << std::endl;
         #endif
 
@@ -219,12 +240,45 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
 
         MatchedChunk chunk = MatchedChunk(os, oe, opStartBp, opEndBp, pOpticalMap,
                                           cs, ce, cStartBp, cEndBp, pContigMap, isBoundaryChunk);
+
+        ////////////////////////////////////////////////////////////////////////////
         #if BUILDMATCH_DEBUG > 0
-        std::cout << "Built Chunk: "
-                  << "contig = (" << chunk.getContigStartIndex() << "," << chunk.getContigEndIndex() << ")"
-                  << "optical = (" << chunk.getOpticalStartIndex() << "," << chunk.getOpticalEndIndex() << ")"
-                  << std::endl;
+        {
+            std::cout << "Built Chunk:\n"
+                      << "\tcontig = (" << chunk.getContigStartIndex() << "," << chunk.getContigEndIndex() << "): ";
+
+            // Add the contig frag lengths
+            int cSize = 0;
+            for(vector<FragData>::const_iterator iter = chunk.getContigFragB(); 
+                                                 iter != chunk.getContigFragE();
+                                                 iter++
+                                                 )
+            {
+                std::cout  << iter->size_ << " ";
+                if (iter != chunk.getContigFragE()-1)
+                    std::cout << "+ ";
+                cSize += iter->size_;
+            }
+            std::cout << " = " << cSize << "\n";
+
+            std::cout << "\toptical = (" << chunk.getOpticalStartIndex() << "," << chunk.getOpticalEndIndex() << ")";
+
+            // Add the optical frag lengths
+            int oSize = 0;
+            for(vector<FragData>::const_iterator iter = chunk.getOpticalFragB(); 
+                                                 iter != chunk.getOpticalFragE();
+                                                 iter++
+                                                 )
+            {
+                std::cout  << iter->size_ << " ";
+                if (iter != chunk.getOpticalFragE()-1)
+                    std::cout << "+ ";
+                oSize += iter->size_;
+            }
+            std::cout << " = " << oSize << std::endl;
+        }
         #endif
+        ////////////////////////////////////////////////////////////////////////////
 
 
         matchedChunkList.push_back(chunk);
@@ -255,13 +309,13 @@ bool StandardMatchMaker::filterFunction(const MatchResult * pResult)
                  failContigHitsCheck);
 
     #if FILTER_DEBUG > 0
-    std::cout << "MatchResult: " << *pResult << "\nt"
+    std::cout << "FILTER: MatchResult=" << *pResult << "\n"
               << "FailChi2: " << failChi2Filter
               << " FailLengthRatio: " << failLengthRatio
               << " FailContigMissRate: " << failContigMissRate
               << " FailContigHitsCheck: " << failContigHitsCheck << " ";
     printAttributes(std::cout, *pResult);
-    std::cout << std::endl;
+    std::cout << "\n\n\n" << std::endl;
     #endif
 
     return (!fail);

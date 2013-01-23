@@ -35,6 +35,11 @@ class FragData
             firstOrLastFrag_(false)
         { };
 
+        FragData(const FragData& fd) :
+            size_(fd.size_),
+            firstOrLastFrag_(fd.firstOrLastFrag_)
+        { };
+
         // Construct the fragment from two consecutive sites.
         // This is for constructing a contig restriction pattern
         FragData(const SiteData& sd1, const SiteData& sd2) : 

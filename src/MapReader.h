@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -19,6 +20,8 @@ struct MapInput
 
     void reset();
 };
+
+std::ostream& operator<<(std::ostream& os, const MapInput& map);
 
 class MapReader
 {

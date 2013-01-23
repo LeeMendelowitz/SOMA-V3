@@ -4,12 +4,28 @@
 
 using namespace std;
 
+#define MAPREADER_DEBUG 0
+
 void MapInput::reset()
 {
     length_ = 0;
     numFrags_ = 0;
     mapId_ = "";
     frags_.clear();
+}
+
+std::ostream& operator<<(std::ostream& os, const MapInput& map)
+{
+    os << map.mapId_ << " "
+       << map.numFrags_ << " "
+       << map.length_ << ". ";
+    for(std::vector<FragData>::const_iterator i = map.frags_.begin();
+        i != map.frags_.end();
+        i++)
+    {
+        os << i->size_ << " ";
+    }
+    return os;
 }
 
 
@@ -101,11 +117,18 @@ void MapReader::readLine(const std::string& line, MapInput& data)
         lineOK = lineOK && !iss.fail();
     }
 
+    lineOK = data.frags_.size() == (size_t) data.numFrags_;
+
     if (!lineOK)
     {
+        data.reset();
         ostringstream msg;
         msg << "Error: Map file formatted incorrectly: " << fileName_ << ".";
         throw(Exception(msg.str()));
         return;
     }
+
+    #if MAPREADER_DEBUG > 0
+    std::cout << "Read map: " << data << std::endl;
+    #endif
 }
