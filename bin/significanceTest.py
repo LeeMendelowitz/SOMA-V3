@@ -10,6 +10,7 @@
 import numpy as np
 import sys
 import SOMAMap
+import scipy
 
 ##############################################################################
 # Class to store fragments
@@ -53,6 +54,7 @@ class FragDatabase(object):
 ################################################################################
 # Class to store null distribution of contig chunk scores
 class ChunkScoreNullDistribution(object):
+
     def __init__(self, chunkScores):
         self.chunkScores = np.sort(chunkScores)
         self.bootstrapScores = {}
@@ -66,8 +68,27 @@ class ChunkScoreNullDistribution(object):
         self.bootstrapScores[numChunks] = np.sort(scores)
         return scores
 
-    def getPercentageBetter(self, numChunks, score):
+    # assign pval by computing how many random "alignments" built by sampling
+    # N chunkScores from the empirical distribution of chunkScores score better than
+    # this matchResult.
+    def calcPval(self, mr):
+        def assignPval(mr):
+            score = mr.score
+            numChunks = len(mr.alignment)
+            scores = self.computeScoreDistribution(numChunks)
+            numBetter = np.sum(scores >= score)
+            pval = float(numBetter)/scores.shape[0]
+            mr.pval = pval
+            return pval
+
+        if isinstance(mr, list):
+            ml = mr
+            for mr in ml:
+                assignPval(mr)
+        else:
+            return assignPval(mr.pval)
+
+    def computeQuantile(self, numChunks, q):
         scores = self.computeScoreDistribution(numChunks)
-        numBetter = np.sum(scores >= score)
-        fracBetter = float(numBetter)/scores.shape[0]
-        return fracBetter
+        equantile = scipy.stats.mstats.mquantiles(scores, prob=[q])[0]
+        return equantile

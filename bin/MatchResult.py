@@ -231,4 +231,4 @@ class MatchResult:
     # Return the numerical scores for each matched chunk
     def getChunkScores(self):
         sumChunkScores = lambda mc: mc.score.contig + mc.score.optical + mc.score.sizing
-        return [sumChunkScores(mc) for mc in mr.alignment if not mc.isContigGap]
+        return [sumChunkScores(mc) for mc in self.alignment if not mc.isContigGap]

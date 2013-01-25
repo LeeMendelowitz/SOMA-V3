@@ -1,7 +1,6 @@
 # Create scaffolds from unique soma alignments
-import importSomaData
-import glob
 import numpy as np
+import itertools
 
 
 # Return a tiling of the matchList to
@@ -12,18 +11,21 @@ import numpy as np
 # keys: chromosome, value: list of sorted MatchResults for chromosome
 def createTiling(matchList, allowOverlaps=False):
     # Sort the matchList by size
-    matchList = sorted(matchList, key=lambda mr: mr.size)[::-1]
+    matchList = sorted(matchList, key=lambda mr: mr.cAlignedBases)[::-1]
     chromToML = {}
-    noOverlap = lambda mr1, mr2: (mr1.opStart >= mr2.opEnd) or (mr1.opEnd <= mr2.opStart)
+    noOverlap = lambda mr1, mr2: (mr1.opStartBp <= mr2.opEndBp) or (mr1.opEndBp <= mr2.opStartBp)
     for mr in matchList:
-        if mr.chromosomeName not in chromToML:
-            chromToML[mr.chromosomeName] = [mr]
+        if mr.chromosome not in chromToML:
+            chromToML[mr.chromosome] = [mr]
         else:
-            numOverlaps = sum(int(not noOverlap(mr, mr2)) for mr2 in chromToML[mr.chromosomeName])
-            if (numOverlaps==0 or allowOverlaps):
-                chromToML[mr.chromosomeName].append(mr)
+            if allowOverlaps:
+                chromToML[mr.chromosome].append(mr)
+                continue
+            numOverlaps = sum(int(not noOverlap(mr, mr2)) for mr2 in chromToML[mr.chromosome])
+            if (numOverlaps==0):
+                chromToML[mr.chromosome].append(mr)
     for chrom in chromToML.keys():
-        chromToML[chrom] = sorted(chromToML[chrom], key = lambda mr: mr.opStart)
+        chromToML[chrom] = sorted(chromToML[chrom], key = lambda mr: mr.opStartBp)
     return chromToML
 
 
@@ -38,60 +40,58 @@ def writeScaffoldsFile(chromToML, chromStats, overallStats, scaffFileName):
     fout.write('*'*50 + '\n\n')
 
     chromList = sorted(chromToML.keys())
+
+    chromHeaderTemplate =  '*'*50 + '\n{chromId}\n' + '*'*50 + '\n'
+    chromHeaderTemplate += 'chromSize: {stats[length]} coveredSize: {stats[coveredSize]} coveredRatio: {stats[coveredRatio]:6.3f}\n'
+
+    # (name, header spec, record spec)
+    fields = [ ('contigId', '{0:20s}', '{match.contigId:20s}' ),
+               ('length', '{0:10s}', '{match.cAlignedBases:10d}'),
+               ('start', '{0:10s}', '{match.opStartBp:10d}'),
+               ('end', '{0:10s}', '{match.opEndBp:10d}'),
+               ('gap after', '{0:10s}', '{gap:10d}')
+             ]
+
+    chromHeaderTemplate += '\t'.join(headerSpec.format(name) for name,headerSpec,recordSpec in fields) + '\n'
+    recordTemplate = '\t'.join(recordSpec for name,headerSpec,recordSpec in fields) + '\n'
+
     for chrom in chromList:
         stats = chromStats[chrom]
-        header = '*'*50 + '\n' + chrom + '\n' + '*'*50 + '\n'
-        header += 'chromSize: %i coveredSize: %i coveredRatio: %f\n'%(stats['size'], stats['coveredSize'], stats['coveredRatio'])
-        header += '%20s\t%10s\t%10s\t%10s\t%10s'%('contigId','length','start','end', 'gap after') + '\n'
+        header = chromHeaderTemplate.format(chromId = chrom, stats=stats)
+        #header = '*'*50 + '\n' + chrom + '\n' + '*'*50 + '\n'
+        #header += 'chromSize: %i coveredSize: %i coveredRatio: %f\n'%(stats['size'], stats['coveredSize'], stats['coveredRatio'])
+        #header += '%20s\t%10s\t%10s\t%10s\t%10s'%('contigId','length','start','end', 'gap after') + '\n'
         fout.write(header)
         ml = chromToML[chrom]
-        gaps = [ml[i].opStartBp - ml[i-1].opEndBp for i in range(1,len(ml))]
-        gaps.append(0)
-        fout.write('\n'.join(['%20s\t%10i\t%10i\t%10i\t%10i'%(ml[i].contigId,ml[i].size,ml[i].opStartBp, ml[i].opEndBp, gaps[i]) for i in range(len(ml))]))
-        fout.write('\n')
+        gaps = [ml[i].opStartBp - ml[i-1].opEndBp for i in range(1,len(ml))] + [0]
+        assert(len(ml) == len(gaps))
+        for mr, gapAfter in itertools.izip(ml, gaps):
+            record = recordTemplate.format(match = mr, gap=gapAfter)
+            fout.write(record)
     fout.close()
 
-def createScaffolds(matchListPickle, opticalMapFiles, outFile, allowOverlaps=False):
+#
+# contigMatchDict: contigId to list of matches for that contig
+def createScaffolds(contigMatchDict, opticalMapDict, outFile, allowOverlaps=False):
 
-    # Read matches
-    contigToMatchList = importSomaData.getContigToMatchList(matchListPickle)
-    ml = []
-    for contigId, contigMatches in contigToMatchList.iteritems():
-        ml.extend(contigMatches)
-    print 'Read %i matches from pickle files %s'%(len(ml), matchListPickle)
-
-    # Read optical maps
-    opticalMapDict = {}
-    for oFile in opticalMapFiles:
-        opticalMapDict[oFile] = importSomaData.readOpticalMap(oFile)
-
+    ml = [mr for contigId, contigMatches in contigMatchDict.iteritems() for mr in contigMatches]
     # Create a tiling of the Match Results
     chromToML = createTiling(ml, allowOverlaps=allowOverlaps)
 
     overallStats = {}
-
-    # For each tiling, computing the starting and ending location (in bp) of each matchResult with 
-    # respect to the optical map.
     chromStats = {}
-    opMapSize = np.sum([np.sum(om[:,0]) for om in opticalMapDict.values()]) 
+
+    opMapSize = sum(omap.length for omap in opticalMapDict.itervalues())
     totalCoveredSize = 0
     totalContigsInScaff = 0
-    for oMap in chromToML.keys():
-        opticalFragLengths = opticalMapDict[oMap][:,0]
-        cumulativeSum = np.cumsum(opticalFragLengths)
-        fragStart = np.concatenate(([0], cumulativeSum[0:-1]))
-        ml = chromToML[oMap]
-        for mr in ml:
-            alignedContigFragLengths = mr.alignedContigLengths
-            mr.opStartBp = fragStart[mr.opStart+1]-alignedContigFragLengths[0] 
-            mr.opEndBp = fragStart[mr.opEnd]+alignedContigFragLengths[-1]
-        totalContigsInScaff += len(ml)
-        chromSize = np.sum(opticalFragLengths)
-        coveredSize = np.sum([mr.size for mr in ml])
+    for omapId, chromML in chromToML.iteritems():
+        omap = opticalMapDict[omapId]
+        totalContigsInScaff += len(chromML)
+        coveredSize = np.sum([mr.opEndBp - mr.opStartBp for mr in chromML])
         totalCoveredSize += coveredSize
-        coveredRatio = coveredSize/float(chromSize)
+        coveredRatio = coveredSize/float(omap.length)
         # Note: The coveredSize and coveredRatio stats will be skewed if overlaps are allowed
-        chromStats[oMap] = dict([('size',chromSize), ('coveredSize', coveredSize), ('coveredRatio',coveredRatio)])
+        chromStats[omapId] = dict([('length', omap.length), ('coveredSize', coveredSize), ('coveredRatio',coveredRatio)])
     overallStats['opMapSize'] = opMapSize
     overallStats['contigsInScaff'] = totalContigsInScaff
     overallStats['coveredSize'] = totalCoveredSize

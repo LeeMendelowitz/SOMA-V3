@@ -10,6 +10,7 @@ import numpy as np
 import cPickle
 from MatchResult import MatchResult
 import SOMAMap
+from collections import defaultdict
 
 
 ############################################
@@ -40,8 +41,7 @@ def getContigToMatchList(fileName):
     pickleFile = open(fileName)
     ml = cPickle.load(pickleFile)
     pickleFile.close()
-    contigToMatch = {}
+    contigToMatch = defaultdict(list)
     for mr in ml:
-        if mr.contigId not in contigToMatch: contigToMatch[mr.contigId] = []
         contigToMatch[mr.contigId].append(mr)
     return contigToMatch
