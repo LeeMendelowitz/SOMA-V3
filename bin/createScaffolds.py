@@ -29,7 +29,7 @@ def createTiling(matchList, allowOverlaps=False):
     return chromToML
 
 
-def writeScaffoldsFile(chromToML, chromStats, overallStats, scaffFileName):
+def writeScaffoldsFile(chromToML, chromStats, overallStats, contigMatchDict, scaffFileName):
     fout = open(scaffFileName, 'w')
 
     # Write overall scaffold stats
@@ -47,6 +47,8 @@ def writeScaffoldsFile(chromToML, chromStats, overallStats, scaffFileName):
     # (name, header spec, record spec)
     fields = [ ('contigId', '{0:20s}', '{match.contigId:20s}' ),
                ('length', '{0:10s}', '{match.cAlignedBases:10d}'),
+               ('orientation', '{0:10s}', '{orientation:10s}'),
+               ('placements', '{0:10s}', '{placements:10d}'),
                ('start', '{0:10s}', '{match.opStartBp:10d}'),
                ('end', '{0:10s}', '{match.opEndBp:10d}'),
                ('gap after', '{0:10s}', '{gap:10d}')
@@ -66,7 +68,9 @@ def writeScaffoldsFile(chromToML, chromStats, overallStats, scaffFileName):
         gaps = [ml[i].opStartBp - ml[i-1].opEndBp for i in range(1,len(ml))] + [0]
         assert(len(ml) == len(gaps))
         for mr, gapAfter in itertools.izip(ml, gaps):
-            record = recordTemplate.format(match = mr, gap=gapAfter)
+            numPlacements = len(contigMatchDict[mr.contigId])
+            orientation = 'F' if mr.forward else 'R'
+            record = recordTemplate.format(match = mr, gap=gapAfter, placements=numPlacements, orientation=orientation)
             fout.write(record)
     fout.close()
 
@@ -96,7 +100,7 @@ def createScaffolds(contigMatchDict, opticalMapDict, outFile, allowOverlaps=Fals
     overallStats['contigsInScaff'] = totalContigsInScaff
     overallStats['coveredSize'] = totalCoveredSize
     overallStats['coveredRatio'] =  float(totalCoveredSize)/opMapSize
-    writeScaffoldsFile(chromToML, chromStats, overallStats, outFile)
+    writeScaffoldsFile(chromToML, chromStats, overallStats, contigMatchDict, outFile)
 
 def main():
     pass
