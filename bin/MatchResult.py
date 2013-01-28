@@ -199,12 +199,12 @@ class MatchResult:
 
     def printAlignment(self, fout=sys.stdout):
         mr = self
+        orientation = 'Forward' if mr.forward else 'Reverse'
         fout.write('%s %i %f\n'%(mr.contigId, mr.contigLength, mr.pval))
-        fout.write('%s %i to %i\n'%(mr.chromosome, mr.opStartIndex, mr.opEndIndex))
-        cStrings = []
-        oStrings = []
-        cStrings.append('Contig Frags')
-        oStrings.append('Optical Frags')
+        fout.write('%s %i to %i %s\n'%(mr.chromosome, mr.opStartIndex, mr.opEndIndex, orientation))
+        cStrings = ['Contig Frags']
+        oStrings = ['Optical Frags']
+        scoreStrings = ['Chunk Score']
 
         # Iterate over the MatchedChunks
         for mc in self.alignment:
@@ -217,14 +217,18 @@ class MatchResult:
                 cfragString += ' = ' +  str(np.sum(mc.contig.frags))
                 ofragString = str(np.sum(mc.optical.frags))
                 ofragString += ' = ' + ' + '.join(map(str,mc.optical.frags))
+            scoreString = '{size:6.3f} {contig:6.3f} {optical:6.3f}'.format(size=mc.score.sizing, contig=mc.score.contig, optical=mc.score.optical)
             cStrings.append(cfragString)
             oStrings.append(ofragString)
+            scoreStrings.append(scoreString)
 
         cw = max(len(s) for s in cStrings)
         ow = max(len(s) for s in oStrings)
+        sw = max(len(s) for s in scoreStrings)
         # Fancy python string formatting:
-        for c, o in zip(cStrings, oStrings):
-            fout.write('{0:^{width1}} | {1:^{width2}}\n'.format(c, o, width1=cw, width2=ow))
+        for c, o, s in zip(cStrings, oStrings, scoreStrings):
+            fout.write('{cstring:^{width1}} | {ostring:^{width2}} | {scorestring:^{width3}}\n'.format( \
+                        cstring=c, ostring=o, scorestring=s, width1=cw, width2=ow, width3=sw) )
 
 
     ##################################

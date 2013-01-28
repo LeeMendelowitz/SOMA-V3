@@ -86,7 +86,7 @@ class ChunkScoreNullDistribution(object):
             for mr in ml:
                 assignPval(mr)
         else:
-            return assignPval(mr.pval)
+            return assignPval(mr)
 
     def computeQuantile(self, numChunks, q):
         scores = self.computeScoreDistribution(numChunks)

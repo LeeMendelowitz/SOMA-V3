@@ -74,6 +74,8 @@ def collectMatchResultsByContig(ml):
         matchDict[contigId] = sorted(matchDict[contigId], key = lambda mr: mr.score)[::-1]
     return matchDict
 
+contigToMatchDict = collectMatchResultsByContig
+
 LENGTH_RATIO = 0.90 # A MatchResults length ratio must be greater than or equal to this
 MISS_RATE = 1.0 # This fraction of missed sites must be less than this
 UNALIGNED_RATIO = 0.10 # A MatchResult fraction of contig bases that are unaligned must be less than this
