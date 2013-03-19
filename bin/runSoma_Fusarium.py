@@ -10,7 +10,8 @@ import os
 import glob
 import sys
 import cPickle
-from ruffus import *
+#from ruffus import *
+from collections import Counter
 
 # For parsing output
 import parseSomaMatch
@@ -19,14 +20,15 @@ import createScaffolds
 import make_opt
 import make_silico
 import SOMAMap
+import significanceTest
 import alignRandomMaps
+import adjustOpticalMaps
 
 CWD = os.getcwd()
 SOMA_BIN_DIR = CWD
 
 # SOMA Options
 numThreads = 4
-numPermutationTrials = 0
 
 # Parameters
 sdMin=4
@@ -44,52 +46,61 @@ def getBaseName(inFile):
     (fileBaseName, fileExtension)=os.path.splitext(fileName)
     return fileBaseName
 
-###########################
-# Assign pvals to each match result in the matchlist
-def assignPvals(ml, contigMapFile, opticalMapFile):
-    fragsPerRandomContig = 10
-    numRandomContigs = 1000
-    nullDist = alignRandomMaps.buildChunkScoreNullDistribution(contigMapFile, opticalMapFile, numRandomContigs, fragsPerRandomContig)
-    nullDist.calcPval(ml)
 
-#############################
+###################################################
+# Convert an optical map from the Schwartz lab format
+# to the SOMA format
 # opticalMapFile: optical map file in the Schwartz lab format
-# contigFile: fasta with contigs to be aligned to the optical map
-def createMaps(opticalMapFile, contigFile, outputPfx):
-    silicoFileOut = '%s.silico'%outputPfx
+def convertOpticalMaps(opticalMapFile, outputPfx):
     opMapFileOut = '%s.opt'%outputPfx
 
-    ###########################################################################
-    print '\n'+'*'*50
-    print 'Reading Optical Map File %s'%opticalMapFile
-    print '*'*50 + '\n'
+    msg = '\n'+'*'*50 + \
+          '\nReading Optical Map File %s\n'%opticalMapFile + \
+          '*'*50 + '\n'
+    sys.stderr.write(msg)
 
     opMapList = make_opt.readMapDataSchwartz(opticalMapFile)
-
-    # Assert that all of the optical maps have the same enzyme list.
-    # otherwise this pipeline will not work
-    assert len(set([om.enzyme for om in opMapList])) == 1
+    enzymeSet = set(om.enzyme for om in opMapList)
+    if len(enzymeSet) > 1:
+        raise RuntimeError('Different enzymes used in the input optical map set!')
     enzyme = opMapList[0].enzyme
 
-    ##########################################################################
-    print '\n'+'*'*50
-    print 'Converting Optical Map to SOMA Format'
-    print '*'*50 + '\n'
+    msg = '\n'+'*'*50 +\
+          '\nConverting Optical Map to SOMA Format\n' +\
+          '*'*50 + '\n'
+    sys.stderr.write(msg)
 
     # Optical maps for chromosomes 
     # Remove all white space from restriction map names
     for opMap in opMapList:
-        oldName = opMap.mapId
-        opMap.mapId = ''.join(oldName.split())
+        opMap.mapId = ''.join(opMap.mapId.split())
     SOMAMap.writeMaps(opMapList, opMapFileOut)
+    result = { 'enzyme' : enzyme,
+               'opMapList' : opMapList,
+               'opticalMapFile' : opMapFileOut}
+    return result
 
-    ###########################################################################
-    print '\n'+'*'*50
-    print 'Creating in-silico optical map using contig file %s and enzyme %s'%(contigFile, enzyme)
-    print '*'*50 + '\n'
-    if not os.path.exists(silicoFileOut):
-        make_silico.makeInsilicoMain(contigFile, enzyme, silicoFileOut)
 
+#############################
+# opticalMapFile: optical map file in the Schwartz lab format
+# contigFile: fasta with contigs to be aligned to the optical map
+def createMaps(opticalMapFileIn, contigFile, outputPfx):
+    contigMapFile = '%s.silico'%outputPfx
+    res = convertOpticalMaps(opticalMapFileIn, outputPfx)
+    opticalMapFile = res['opticalMapFile']
+    enzyme = res['enzyme']
+    if not os.path.exists(contigMapFile):
+        msg = '\n'+'*'*50+'\n' + \
+              'Creating in-silico optical map using contig file %s and enzyme %s\n'%(contigFile, enzyme)+\
+              '*'*50 + '\n'
+        sys.stderr.write(msg)
+        make_silico.makeInsilicoMain(contigFile, enzyme, contigMapFile)
+    else:
+        msg = 'Warning: Contig map file %s already exists. Using this map file.\n'
+        sys.stderr.write(msg)
+    result = { 'contigMapFile': contigMapFile,
+               'opticalMapFile': opticalMapFile }
+    return result
 
 ########################################################
 # Make alignments of the maps in the contigMap file to the maps in the opticalMap file
@@ -97,12 +108,9 @@ def createMaps(opticalMapFile, contigFile, outputPfx):
 # contigMap: map file in SOMA Map format
 def makeAlignments(opticalMap, contigMap, outputPfx):
 
-    silicoFileOut = '%s.silico'%outputPfx
-    opMapFileOut = '%s.opt'%outputPfx
-
-
     ###########################################################################
     xmlFile = '%s_SigMatches.xml'%outputPfx
+    result = { 'xmlFile': xmlFile}
 
     print '\n'+'*'*50
     print 'Matching contigs to the optical maps'
@@ -118,7 +126,6 @@ def makeAlignments(opticalMap, contigMap, outputPfx):
     '--maxMatchesPerContig=%i'%maxMatchesPerContig,
     '--minSiteHits=%i'%minSiteHits,
     '--numThreads', str(numThreads),
-    '--numPermutationTrials',str(numPermutationTrials),
     '--siteCostContig', str(siteCostContig),
     '--siteCostOptical', str(siteCostOptical)]
 
@@ -137,6 +144,8 @@ def makeAlignments(opticalMap, contigMap, outputPfx):
     else:
         sys.stderr.write('Output file %s already exists. Not running SOMA.\n'%xmlFile)
 
+    return result
+
 ############################################################################
 def postProcess(xmlFile, opticalMapFile, contigMapFile, outputPfx):
 
@@ -151,7 +160,7 @@ def postProcess(xmlFile, opticalMapFile, contigMapFile, outputPfx):
 
     # Parse Match Results. Write Pickle Files
     ml = parseSomaMatch.parseMatchFileXML(xmlFile)
-    assignPvals(ml, contigMapFile, opticalMapFile)
+    significanceTest.runSignificanceTest(ml, contigMapFile, opticalMapFile, numThreads=numThreads)
 
     # Select significant results
     pvalCutoff = 0.05
@@ -194,13 +203,76 @@ def postProcess(xmlFile, opticalMapFile, contigMapFile, outputPfx):
     createScaffolds.createScaffolds(sigUniqueMatchDict, opMapDict, '%s.scaffold_sigUniqueMatches_noOverlaps.txt'%outputPfx, allowOverlaps=False)
 
 def runSoma(opticalMapFile, contigFile, pfx):
-    createMaps(opticalMapFile, contigFile, pfx)
-
-    opMapSoma = '%s.opt'%pfx
-    cMapSoma = '%s.silico'%pfx
-    xmlFile = '%s_AllMatches.xml'%pfx
+    res = createMaps(opticalMapFile, contigFile, pfx)
+    opMapSoma = res['opticalMapFile']
+    cMapSoma = res['contigMapFile']
     makeAlignments(opMapSoma, cMapSoma, pfx)
 
+    xmlFile = '%s_AllMatches.xml'%pfx
+
+    postProcess(xmlFile, opMapSoma, cMapSoma, pfx)
+
+def runSomaFusarium_2_23():
+    wd = '/cbcb/project-scratch/lmendelo/Fusarium/broadAssembly/hybridAssembly_Oct/output7/selfNucmerAlignment/newScaffs/somaAlignment'
+    os.chdir(wd)
+    opticalMapFile =  'Fusarium_oxysporiumOpticalMaps061306'
+    contigSeqFile = 'newScaffolds.fasta'
+    pfx = 'aln1'
+
+    # Convert into SOMA formats
+    res = createMaps(opticalMapFile, contigSeqFile, pfx)
+    opMapSoma = res['opticalMapFile']
+    cMapSoma = res['contigMapFile']
+
+    # Adjust the optical map
+    opMapSomaAdjusted = '%s.adjusted.opt'%pfx
+    adjustOpticalMap(cMapSoma, opMapSoma, opMapSomaAdjusted)
+
+    # Make alignments against the adjusted map
+    res = makeAlignments(opMapSomaAdjusted, cMapSoma, pfx)
+    xmlFile = res['xmlFile']
+    postProcess(xmlFile, opMapSoma, cMapSoma, pfx)
+
+def runSomaFusarium_2_26():
+    wd = '/cbcb/project-scratch/lmendelo/Fusarium/broadAssembly/hybridAssembly_Oct/output7/selfNucmerAlignment/newScaffs/reScaffold/somaAlignment'
+    os.chdir(wd)
+    opticalMapFile =  'Fusarium_oxysporiumOpticalMaps061306'
+    contigSeqFile = 'reScaffolds.fasta'
+    pfx = 'aln_reScaffolds'
+
+    # Convert into SOMA formats
+    res = createMaps(opticalMapFile, contigSeqFile, pfx)
+    opMapSoma = res['opticalMapFile']
+    cMapSoma = res['contigMapFile']
+
+    # Adjust the optical map
+    opMapSomaAdjusted = '%s.adjusted.opt'%pfx
+    adjustOpticalMap(cMapSoma, opMapSoma, opMapSomaAdjusted)
+
+    # Make alignments against the adjusted map
+    res = makeAlignments(opMapSomaAdjusted, cMapSoma, pfx)
+    xmlFile = res['xmlFile']
+    postProcess(xmlFile, opMapSoma, cMapSoma, pfx)
+
+def runSomaFusarium_3_10():
+    wd = '/cbcb/project-scratch/lmendelo/Fusarium/broadAssembly/hybridAssembly_Oct/output7/contigCleanup/bambusMergedContigScaffolds/opMapAlign'
+    os.chdir(wd)
+    opticalMapFile =  'Fusarium_oxysporiumOpticalMaps061306'
+    contigSeqFile = 'bambusScaff.scaffolds.linear.formatted.fasta'
+    pfx = 'aln_bambusScaffolds'
+
+    # Convert into SOMA formats
+    res = createMaps(opticalMapFile, contigSeqFile, pfx)
+    opMapSoma = res['opticalMapFile']
+    cMapSoma = res['contigMapFile']
+
+    # Adjust the optical map
+    opMapSomaAdjusted = '%s.adjusted.opt'%pfx
+    adjustOpticalMap(cMapSoma, opMapSoma, opMapSomaAdjusted)
+
+    # Make alignments against the adjusted map
+    res = makeAlignments(opMapSomaAdjusted, cMapSoma, pfx)
+    xmlFile = res['xmlFile']
     postProcess(xmlFile, opMapSoma, cMapSoma, pfx)
 
 def runAdjustedMaps():
@@ -211,8 +283,79 @@ def runAdjustedMaps():
     makeAlignments(opMapSoma, cMapSoma, pfx)
     postProcess(xmlFile, opMapSoma, cMapSoma, pfx)
 
+###############################################################
+# Perform an initial alignment of the insilico maps
+# Use high quality alignments 
+# Use the methods in adjustOpticalMaps module to create a new optical map
+def adjustOpticalMap(contigMapFile, opticalMapFileOrig, opticalMapFileNew):
 
+    # Perform an initial alignment of of the contigMapFile against the opticalMapFile
+    outputPfx = '%s.%s.alignForAdjustment'%(contigMapFile,opticalMapFileOrig)
+    res = makeAlignments(opticalMapFileOrig, contigMapFile, outputPfx)
+    ml = parseSomaMatch.parseMatchFileXML(res['xmlFile'])
+
+    sys.stderr.write('adjustOpticalMap: Parsed %i matches from file %s\n'%(len(ml), res['xmlFile']))
+
+    # Filter the match list:
+    minHits = 10
+    maxMissRate = 0.10
+    def matchOK(mr):
+        hitsOK = mr.contigHits >= minHits
+        missRateOK = max(mr.contigMissRate, mr.opticalMissRate) <= maxMissRate
+        return hitsOK and missRateOK
+    goodMatches = [mr for mr in ml if matchOK(mr)]
+    sys.stderr.write('adjustOpticalMap: Filtered to %i matches based on quality'%(len(goodMatches)))
+
+    # Count the number of good alignments per contig. Only select the unique alignments
+    contigAlignmentCounts = Counter(mr.contigId for mr in goodMatches)
+    uniqueAlignments = [mr for mr in goodMatches if contigAlignmentCounts[mr.contigId]==1]
+    sys.stderr.write('adjustOpticalMap: Filtered to %i matches based on uniqueness'%(len(uniqueAlignments)))
+
+    # Create a matched chunk file
+    matchedChunkFile = '%s.matchedChunks'%outputPfx
+    adjustOpticalMaps.makeMatchedChunkFile(uniqueAlignments, matchedChunkFile)
+    adjustOpticalMaps.run(opticalMapFileOrig, matchedChunkFile, opticalMapFileNew)
+
+# align optical map to itself
+def selfAlignment():
+    outputPfx = 'opMapSelfAlignment'
+    opticalMapFile = 'Fusarium_oxysporiumOpticalMaps061306'
+    opticalMapFileSOMA = '%s.opt'%outputPfx
+    xmlFile = '%s_AllMatches.xml'%outputPfx
+
+    ###########################################################################
+    print '\n'+'*'*50
+    print 'Reading Optical Map File %s'%opticalMapFile
+    print '*'*50 + '\n'
+
+    opMapList = make_opt.readMapDataSchwartz(opticalMapFile)
+
+    # Assert that all of the optical maps have the same enzyme list.
+    # otherwise this pipeline will not work
+    assert len(set([om.enzyme for om in opMapList])) == 1
+    enzyme = opMapList[0].enzyme
+
+    ##########################################################################
+    print '\n'+'*'*50
+    print 'Converting Optical Map to SOMA Format'
+    print '*'*50 + '\n'
+
+    # Optical maps for chromosomes 
+    # Remove all white space from restriction map names
+    for opMap in opMapList:
+        oldName = opMap.mapId
+        opMap.mapId = ''.join(oldName.split())
+    SOMAMap.writeMaps(opMapList, opticalMapFileSOMA)
+
+    # Run the self alignment
+    global local
+    local = True
+    makeAlignments(opticalMapFileSOMA, opticalMapFileSOMA, outputPfx)
+    postProcess(xmlFile, opticalMapFileSOMA, opticalMapFileSOMA, outputPfx)
+    
 def main():
+    runSomaFusarium_3_10()
+    return
     #opticalMap, contigFile, outputPfx = sys.argv[1:4]
     opticalMap =  'Fusarium_oxysporiumOpticalMaps061306'
     #contigFile =  'fusarium.oxysporum4287.v1p3.contigs.fa'

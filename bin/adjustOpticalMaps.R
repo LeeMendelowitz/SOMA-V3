@@ -2,7 +2,7 @@
 # LMendelo@umiacs.umd.edu
 # File: adjustOpticalMaps.R
 # 
-# Apply loess regression to remove bais in reported optical map fragment sizes
+# Apply loess regression to remove bias in reported optical map fragment sizes
 ###############################################################################
 
 ############################################

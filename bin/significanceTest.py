@@ -4,14 +4,24 @@
 # File: significanceTest.py
 #
 # Description:
+# Assign pvals to matches in the matchList by aligning random queries to the optical map
+# and building a null distribution of random chunk scores.
+# Random contigs are constructed by sampling with replacement from the distribution of contig restriction fragment lengths.
+# Pvals for an alignment are computed by simulating scores for random alignments with the same number of alignment chunks 
+# as the given alignment. The scores for a randomal alignment are simulated by sampling from the null distribution of random
+# chunk scores.
+#
+#
 
-# Some code to generate random contig maps by sampling 
-# with replacement from a distribution of contig fragments.
+import os
 import numpy as np
 import sys
 import SOMAMap
 import scipy
+import subprocess
+import parseSomaMatch
 
+NUM_THREADS = 1
 ##############################################################################
 # Class to store fragments
 class FragDatabase(object):
@@ -92,3 +102,88 @@ class ChunkScoreNullDistribution(object):
         scores = self.computeScoreDistribution(numChunks)
         equantile = scipy.stats.mstats.mquantiles(scores, prob=[q])[0]
         return equantile
+
+###########################################################
+def generateRandomMaps(mapFileIn, numRandomMaps, fragsPerMap, mapFileOut):
+    fout = open(mapFileOut, 'w')
+    fragDB = FragDatabase(mapFile=mapFileIn)
+
+    for i in range(numRandomMaps):
+        frags = list(fragDB.sampleInteriorFrags(fragsPerMap))
+        # Bound by fragments of length 0, indicating that this random contig starts and ends with a restriction site
+        #frags = [0] + frags  + [0]
+        mapId = 'map%i_frags%i'%(i, fragsPerMap)
+        map = SOMAMap.SOMAMap(mapId=mapId, frags=frags)
+        map.write(fout)
+    fout.close()
+
+###########################################################
+# Wrapper around SOMA to align a random query map to an optical map.
+# The SOMA settings are set to only take the best match for a random
+# query map. All restriction fragments are treated as interior restriction
+# fragments (bounded by two restriction sites)
+def alignRandomMaps(randomQueryMapFile, opticalMapFile, outputPfx, numThreads = NUM_THREADS):
+    cmd = ['./match',
+           '--maxMatchesPerContig=1',
+           '--siteCostContig=3',
+           '--siteCostOptical=5',
+           '--sdMin=4',
+           '--sdMax=4',
+           '--noBoundaries',
+           '--maxMissRateContig=1.00',
+           '--minSiteHits=1',
+           '--numThreads=%i'%numThreads,
+           '--output=%s'%outputPfx]
+    cmd.append(randomQueryMapFile)
+    cmd.append(opticalMapFile)
+    sys.stderr.write('CMD: %s\n'%(' '.join(cmd)))
+    subprocess.call(cmd)
+
+#############################################################
+# Parse SOMA Alignments.
+# Return a dictionary which stores:
+#   matchDict: a dict with keys=queryMapId, value = match result
+#   chunkScores: a list of the scores if alignment chunks
+#   scores: a list of the total score for each alignment
+# Note: This function expects there to be only one match per query
+def parseRandomAlignments(xmlFile):
+    numFrags = int(xmlFile.split('.')[1])
+    matchResults = parseSomaMatch.parseMatchFileXML(xmlFile)
+    ml = matchResults
+    matchDict = dict( (mr.contigId, mr) for mr in matchResults)
+    resDict = {}
+    resDict['matchDict'] = matchDict
+    resDict['chunkScores'] = [chunkScore for mr in ml for chunkScore in mr.getChunkScores()]
+    resDict['scores'] = [mr.score for mr in ml]
+    return resDict
+
+#############################################################
+# Build the empirical distribution of chunk scores for random
+# alignments by generating random query maps and collecting the
+# scores for each alignment chunk.
+# Return a ChunkScoreNullDistribution instance
+def buildChunkScoreNullDistribution(contigMapFile, opticalMapFile, numRandomContigs, numFragsPerContig):
+    randomContigMapFile = 'randomContigs.%i.silico'%numFragsPerContig
+    alnPfx = '%s.%s'%(randomContigMapFile, opticalMapFile)
+    xmlFile = '%s_AllMatches.xml'%alnPfx
+
+    if os.path.exists(xmlFile):
+        sys.stderr.write('XML File for random alignments already exists: %s. Using these alignments.\n'%xmlFile)
+    else:
+        generateRandomMaps(contigMapFile, numRandomContigs, numFragsPerContig, randomContigMapFile)
+        alignRandomMaps(randomContigMapFile, opticalMapFile, alnPfx)
+    randomAlnData = parseRandomAlignments(xmlFile)
+    return ChunkScoreNullDistribution(randomAlnData['chunkScores'])
+
+#############################################################
+# Assign pvals to matches in the matchList by aligning random queries to the optical map
+# and building a null distribution of random chunk scores.
+# Random contigs are constructed by sampling with replacement from the distribution of contig restriction fragment lengths.
+# Pvals for an alignment are computed by simulating scores for random alignments with the same number of alignment chunks 
+# as the given alignment. The scores for a randomal alignment are simulated by sampling from the null distribution of random
+# chunk scores.
+def runSignificanceTest(matchList, contigMapFile, opticalMapFile, numRandomContigs=1000, numFragsPerContig=10, numThreads = 1):
+    global NUM_THREADS
+    NUM_THREADS = numThreads
+    nullDist = buildChunkScoreNullDistribution(contigMapFile, opticalMapFile, numRandomContigs, numFragsPerContig)
+    nullDist.calcPval(matchList)

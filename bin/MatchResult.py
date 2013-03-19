@@ -202,8 +202,13 @@ class MatchResult:
         orientation = 'Forward' if mr.forward else 'Reverse'
         fout.write('%s %i %f\n'%(mr.contigId, mr.contigLength, mr.pval))
         fout.write('%s %i to %i %s\n'%(mr.chromosome, mr.opStartIndex, mr.opEndIndex, orientation))
-        cStrings = ['Contig Frags']
-        oStrings = ['Optical Frags']
+        coordString = '{pfx}_coords: {qname} ({s:d}, {e:d}) ({sbp:d},{ebp:d}) {orient}\n'
+        fout.write(coordString.format(pfx='query', qname=mr.contigId, s=mr.cStartIndex, e=mr.cEndIndex, 
+                                      sbp=mr.cStartBp, ebp=mr.cEndBp, orient=orientation) )
+        fout.write(coordString.format(pfx='ref', qname=mr.chromosome, s=mr.opStartIndex, e=mr.opEndIndex, 
+                                      sbp=mr.opStartBp, ebp=mr.opEndBp, orient='Forward') )
+        cStrings = ['Query Frags']
+        oStrings = ['Reference Frags']
         scoreStrings = ['Chunk Score']
 
         # Iterate over the MatchedChunks

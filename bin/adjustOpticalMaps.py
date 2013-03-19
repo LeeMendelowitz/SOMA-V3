@@ -22,10 +22,10 @@ parser.add_argument('outputMapFile', help='output optical map file')
 
 R_SCRIPT = 'adjustOpticalMaps.R'
 
-def MissingInputFileError(Exception):
+class MissingInputFileError(Exception):
     pass
 
-def RFailure(Exception):
+class RFailure(Exception):
     pass
 
 
