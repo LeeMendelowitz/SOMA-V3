@@ -10,6 +10,7 @@ import os
 import glob
 import sys
 import cPickle
+import argparse
 from collections import Counter
 
 # For parsing output
@@ -25,6 +26,20 @@ import adjustOpticalMaps
 
 CWD = os.getcwd()
 SOMA_BIN_DIR = CWD
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-t", "--threads", type=int, default=1)
+parser.add_argument('--sdmin', type=int, default=4)
+parser.add_argument('--sdmax', type=int, default=4)
+parser.add_argument('--maxMissRateContig', type=float, default=0.5)
+parser.add_argument('--maxMatchesPerContig', type=int, default=5)
+parser.add_argument('--siteCostContig', type=float, default=3.0)
+parser.add_argument('--stieCostOptical', type=float, default=5.0)
+parser.add_argument('--minSiteHits', type=int, default=2)
+parser.add_argument('--local', action='store_true')
+parser.add_argument('-o', '--output', type=str, default='output')
+parser.add_argument('queryMap')
+parser.add_argument('referenceMap')
 
 # SOMA Options
 numThreads = 4
@@ -246,7 +261,7 @@ def adjustOpticalMap(contigMapFile, opticalMapFileOrig, opticalMapFileNew):
     adjustOpticalMaps.run(opticalMapFileOrig, matchedChunkFile, opticalMapFileNew)
     
 def main():
-    pass
+    args = parser.parse_args()
 
 if __name__ == '__main__':
    main()

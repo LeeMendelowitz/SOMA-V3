@@ -11,7 +11,6 @@ import sys
 import glob
 import re
 import os
-import parallelProcess as pp
 from collections import defaultdict
 import cPickle
 from operator import attrgetter
