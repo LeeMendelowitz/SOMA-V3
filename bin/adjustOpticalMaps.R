@@ -1,4 +1,4 @@
-# Lee Mendelowitz
+c# Lee Mendelowitz
 # LMendelo@umiacs.umd.edu
 # File: adjustOpticalMaps.R
 # 
@@ -82,7 +82,9 @@ adjustMap <- function(map, fit)
   if(length(naInd) > 0)
   {
     cat(sprintf("\n\nWARNING: Loess adjustment gave NA for these fragments in map %s:\n", map$mapId))
-    cat(naInd)
+    origVals = map$frags[naInd]
+    ind2Str <- function(ind) {s = sprintf('[%d]=%d',ind,map$frags[ind])}
+    cat(paste(lapply(naInd, ind2Str)))
     cat ("\nKeeping these fragments as original values.\n\n")
     newMap$frags[naInd] = map$frags[naInd]    
   }
