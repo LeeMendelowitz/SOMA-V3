@@ -7,5 +7,5 @@ a restriction map.
 This code is under active development. For questions or comments, contact:
 Lee Mendelowitz (lmendelo@umiacs.umd.edu)
 
-This program is an update to SOMA-V2, developed by Niranjan Nagarajan. SOMA-V2 is available at http://www.cbcb.umd.edu/soma/index.php.
+This program is an update to SOMA-V2, developed by Niranjan Nagarajan. SOMA-V2 is available <a href="http://www.cbcb.umd.edu/soma/index.php">here</a>.
 
