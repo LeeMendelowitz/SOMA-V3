@@ -200,7 +200,7 @@ class MatchResult:
     def printAlignment(self, fout=sys.stdout):
         mr = self
         orientation = 'Forward' if mr.forward else 'Reverse'
-        fout.write('%s %i %f\n'%(mr.contigId, mr.contigLength, mr.pval))
+        fout.write('%s %i %f %.3f\n'%(mr.contigId, mr.contigLength, mr.pval, mr.score))
         fout.write('%s %i to %i %s\n'%(mr.chromosome, mr.opStartIndex, mr.opEndIndex, orientation))
         coordString = '{pfx}_coords: {qname} ({s:d}, {e:d}) ({sbp:d},{ebp:d}) {orient}\n'
         fout.write(coordString.format(pfx='query', qname=mr.contigId, s=mr.cStartIndex, e=mr.cEndIndex, 

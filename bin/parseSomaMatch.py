@@ -70,7 +70,7 @@ def collectMatchResultsByContig(ml):
     for mr in ml:
         matchDict[mr.contigId].append(mr)
     for contigId in matchDict.iterkeys():
-        matchDict[contigId] = sorted(matchDict[contigId], key = lambda mr: mr.score)[::-1]
+        matchDict[contigId] = sorted(matchDict[contigId], key = lambda mr: mr.score, reverse=True)
     return matchDict
 
 contigToMatchDict = collectMatchResultsByContig
