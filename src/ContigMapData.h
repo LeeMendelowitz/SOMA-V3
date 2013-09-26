@@ -67,7 +67,7 @@ class ContigMapData : public MapData
 
     private:
     vector<int> fragBoundaryBp_; // indices of the boundaries for each contig fragment
-    vector<FragData> frags_;
+    FragDataVec frags_;
     ContigMapData * pTwin_; // pointer to the reverse of this map
     int length_; // length in bp
     bool isForward_;
@@ -76,6 +76,6 @@ class ContigMapData : public MapData
 };
 
 void reverseContigFragDataVec(const vector<FragData>& orig, vector<FragData>& reversed);
-bool readMaps(const std::string& fileName, vector<ContigMapData *>& contigMapVec);
+bool readContigMaps(const std::string& fileName, vector<ContigMapData *>& contigMapVec);
 
 #endif

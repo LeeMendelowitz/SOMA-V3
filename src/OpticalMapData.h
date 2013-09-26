@@ -59,9 +59,12 @@ class OpticalMapData : public MapData
 
     int getLength() const { return length_; }
 
+    FragDataVec::const_iterator getFragB() const { return frags_.begin(); }
+    FragDataVec::const_iterator getFragE() const { return frags_.end(); }
+
     private:
     vector<int> fragBoundaryBp_; // The boundaries (in bp) of the restriction fragments in map
-    vector<FragData> frags_; // vector of fragments (doubled if circular)
+    FragDataVec frags_; // vector of fragments (doubled if circular)
     int numFrags_; // Number of fragments in map (without circular trick!)
     bool isCircular_;
     int length_; // Length of the map, in bp
@@ -73,6 +76,6 @@ class OpticalMapData : public MapData
     void readFile(const string&);
 };
 
-bool readMaps(const std::string fileName, std::vector<OpticalMapData *>& opMapVec);
+bool readOpticalMaps(const std::string fileName, std::vector<OpticalMapData *>& opMapVec);
 
 #endif

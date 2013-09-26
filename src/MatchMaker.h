@@ -2,6 +2,7 @@
 // from a ScoreMatrix.
 
 // This is a pure abstract class
+
 #ifndef MATCHMAKER_H
 #define MATCHMAKER_H
 

@@ -101,7 +101,7 @@ void OpticalMapData::makeCircular()
 }
 
 
-bool readMaps(const std::string fileName, std::vector<OpticalMapData *>& opMapVec)
+bool readOpticalMaps(const std::string fileName, std::vector<OpticalMapData *>& opMapVec)
 {
     MapReader reader(fileName);
     MapInput mapData;

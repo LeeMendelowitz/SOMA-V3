@@ -6,6 +6,8 @@
 #include "mapTypes.h"
 
 
+typedef std::vector<FragData> FragDataVec;
+
 class MapData
 {
     public:
@@ -15,14 +17,14 @@ class MapData
 
     std::string getId() const { return id_; }
 
-    // Get starting and ending bp for a fragment
+    // Get starting and ending bp for a fragment at the provided index.
     virtual int getStartBp(int ind, bool forward=true) const = 0;
     virtual int getEndBp(int ind, bool forward=true) const = 0;
 
     virtual int getLength() const = 0;
 
     // Return a constant reference to the map fragments
-    virtual const std::vector<FragData>& getFrags() const = 0;
+    virtual const FragDataVec& getFrags() const = 0;
 
     private:
     std::string id_;

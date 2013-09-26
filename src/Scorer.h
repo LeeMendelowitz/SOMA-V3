@@ -1,4 +1,4 @@
-// Base Class to compute alignment scores for a chunk #ifndef SCORER_H
+// Base Class to compute alignment scores for a chunk
 #ifndef SCORER_H
 #define SCORER_H
 
