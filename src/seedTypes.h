@@ -20,12 +20,15 @@ class FragPtr
     bool operator<(const FragPtr& other) const {
         return this->pFrag_->size_ < other.pFrag_->size_;
     }
+    bool operator<(int fragSize) const {
+        return this->pFrag_->size_ < fragSize;
+    }
 
     // members
     std::vector<FragData>::const_iterator pFrag_; // pointer to the fragment
+    const OpticalMapData * map_; // pointer to the map which owns the fragment
     FragPtr * pNext_;
     FragPtr * pPrev_;
-    const OpticalMapData * map_; // pointer to the map which owns the fragment
     int rank_; // rank of the fragment (sorted by size)
 };
 

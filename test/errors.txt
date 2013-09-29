@@ -1,5 +1,0 @@
-g++ -Wall -fopenmp testDatabase.cc ../src/match.cc ../src/globals.cc ../src/dp.cc ../src/Scorer.cc ../src/utils.cc ../src/debugUtils.cc ../src/ContigMapData.cc ../src/MatchResult.cc ../src/OpticalMapData.cc ../src/pugixml/pugixml.cpp ../src/StandardMatchMaker.cc ../src/LocalMatchMaker.cc ../src/scoringFunctions.cc ../src/MatchedChunk.cc ../src/MapReader.cc ../src/xmlWriter.cc ../src/FragDatabase.cc ../src/seedTypes.cc -I ../src -o testDatabase
-../src/seedTypes.h: In constructor ‘FragPtr::FragPtr(const OpticalMapData*, std::vector<FragData>::const_iterator)’:
-../src/seedTypes.h:28:28: warning: ‘FragPtr::map_’ will be initialized after [-Wreorder]
-../src/seedTypes.h:25:43: warning:   ‘std::vector<FragData>::const_iterator FragPtr::pFrag_’ [-Wreorder]
-../src/seedTypes.cc:3:1: warning:   when initialized here [-Wreorder]

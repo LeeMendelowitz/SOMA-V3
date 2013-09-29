@@ -1,7 +1,7 @@
 #ifndef XMLWRITER_H
 #define XMLWRITER_H
 
-#include "pugixml/pugixml.hpp"
+#include "pugixml.h"
 #include <fstream>
 
 using namespace pugi;

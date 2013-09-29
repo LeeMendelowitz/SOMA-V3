@@ -11,8 +11,8 @@ to efficiently find hits for a query.
 #include "seedTypes.h"
 
 typedef std::vector<FragPtr> FragPtrVec;
-
-
+typedef std::pair<int, int> IntPair;
+typedef std::vector<IntPair> IntPairVec;
 
 class FragDatabase
 {
@@ -24,6 +24,8 @@ class FragDatabase
 
     void addMap(const OpticalMapData * pMap);
     void sortFrags();
+    int lowerBound(int q);
+    bool getFragPtrHits(IntPairVec& query, FragPtrVec& hits);
 
     private:
 
