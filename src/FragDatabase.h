@@ -10,7 +10,7 @@ to efficiently find hits for a query.
 #include "OpticalMapData.h"
 #include "seedTypes.h"
 
-typedef std::vector<FragPtr> FragPtrVec;
+typedef std::vector<FragPtr*> FragPtrVec;
 typedef std::pair<int, int> IntPair;
 typedef std::vector<IntPair> IntPairVec;
 
@@ -25,7 +25,10 @@ class FragDatabase
     void addMap(const OpticalMapData * pMap);
     void sortFrags();
     int lowerBound(int q);
-    bool getFragPtrHits(IntPairVec& query, FragPtrVec& hits);
+    bool getFragPtrHits(IntPairVec& query, std::vector<FragPtr*>& hits);
+
+    FragPtrVec::const_iterator fragsB() const { return frags_.begin();}
+    FragPtrVec::const_iterator fragsE() const { return frags_.end();}
 
     private:
 

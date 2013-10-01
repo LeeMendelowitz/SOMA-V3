@@ -3,8 +3,15 @@ using std::sort;
 using std::lower_bound;
 using std::upper_bound;
 #include <cassert>
+#include <iostream>
 
 #include "FragDatabase.h"
+
+void incrementFragPtrs(vector<FragPtr*>& v);
+void decrementFragPtrs(vector<FragPtr*>& v);
+void filterNullFragPtrs(vector<FragPtr*>& v);
+void filterFragPtrsByRank(vector<FragPtr*>&v, int lowerBound, int upperBound);
+void filterFragPtrsBySize(vector<FragPtr*>&v, int lowerSize, int upperSize);
 
 /*
 Add fragments from the specified OpticalMapData to the 
@@ -20,17 +27,16 @@ void FragDatabase::addMap(const OpticalMapData * pMap)
          iter++)
     {
 
-        FragPtr f = FragPtr(pMap, iter);
-        frags_.push_back(f);
+        FragPtr * f = new FragPtr(pMap, iter);
 
-        FragPtr * curFragPtr = &frags_.back();
         if (prevFragPtr != 0)
         {
-            curFragPtr->pPrev_ = prevFragPtr;
-            prevFragPtr->pNext_ = curFragPtr;
+            f->pPrev_ = prevFragPtr;
+            prevFragPtr->pNext_ = f;
         }
+        frags_.push_back(f);
 
-        prevFragPtr = curFragPtr;
+        prevFragPtr = f;
     }
 }
 
@@ -38,16 +44,25 @@ FragDatabase::~FragDatabase()
 {
 
     // Delete allocated memory
-
-    // 
-    /*
     for (FragPtrVec::iterator iter = frags_.begin();
          iter != frags_.end();
          iter++)
     {
-
+        delete *iter;
     }
-    */
+
+    frags_.clear();
+
+}
+
+inline bool FragPtrCmp(const FragPtr * p1, const FragPtr* p2)
+{
+    return (*p1 < *p2);
+}
+
+inline bool FragPtrIntCmp(const FragPtr * p, int q)
+{
+    return (*p < q);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -60,7 +75,7 @@ FragDatabase::~FragDatabase()
 void FragDatabase::sortFrags()
 {
     // Sort the fragments
-    sort(frags_.begin(), frags_.end());
+    sort(frags_.begin(), frags_.end(), FragPtrCmp);
 
     // Assign ranks
     int rank = 0;
@@ -68,37 +83,138 @@ void FragDatabase::sortFrags()
          iter != frags_.end();
          iter++)
     {
-        iter->rank_ = rank++;
+        (*iter)->rank_ = rank++;
     }
 }
 
 inline int FragDatabase::lowerBound(int q)
 {
-    FragPtrVec::const_iterator iter = lower_bound(frags_.begin(), frags_.end(), q);
+    FragPtrVec::const_iterator iter = lower_bound(frags_.begin(), frags_.end(), q, FragPtrIntCmp);
     int index = iter - frags_.begin();
     return index;
 }
 
-bool FragDatabase::getFragPtrHits(IntPairVec& query, FragPtrVec& hits)
+// Increment all FragPtrs in the vector
+void incrementFragPtrs(vector<FragPtr*>& v)
 {
-
-    
-    for (IntPairVec::const_iterator iter = query.begin();
-         iter != query.end();
-         iter++)
+    for(vector<FragPtr*>::iterator i = v.begin();
+        i != v.end();
+        i++)
     {
-        int lb = iter->first; // lower bound of query
-        int ub = iter->second; // upper bound of query
-        assert(lb <= ub);
-        int lbi = lowerBound(lb);
-        int ubi = lowerBound(ub);
-        assert(lbi <= ubi);
+        FragPtr * old = *i;
+        *i = old->pNext_;
+    }
+    filterNullFragPtrs(v);
+}
 
-        // Use lower index and upper index to get the fragments that match.
+// Decrement all FragPtrs in the vector
+void decrementFragPtrs(vector<FragPtr*>& v)
+{
+    for(vector<FragPtr*>::iterator i = v.begin();
+        i != v.end();
+        i++)
+    {
+        FragPtr * old = *i;
+        *i = old->pPrev_;
+    }
+    filterNullFragPtrs(v);
+}
 
-        // With each subsequent iteration, move these fragment pointers forward, and filter out those which do not match the next range of indices.
+// Remove NULL FragPtrs in the vector
+void filterNullFragPtrs(vector<FragPtr*>& v)
+{
+    const FragPtr* pNull = NULL;
+    vector<FragPtr*>::iterator newEnd = remove(v.begin(), v.end(), pNull);
+    size_t newSize = newEnd - v.begin();
+    v.resize(newSize);
+}
 
+// Filter out FragPtr's that do not fall within the rank bounds.
+void filterFragPtrsByRank(vector<FragPtr*>&v, int lowerBound, int upperBound)
+{
+    assert(lowerBound <= upperBound);
+    vector<FragPtr*>::iterator iter = v.begin();
+    const vector<FragPtr*>::iterator end = v.end();
+    vector<FragPtr*>::iterator loc = iter;
+    while(iter != end)
+    {
+        FragPtr* p = *iter;
+        if (p->rank_ >= lowerBound && p->rank_ < upperBound)
+            *(loc++) = p;
+        iter++;
     }
 
+    size_t newSize = loc-v.begin();
 
+    v.resize(newSize);
+}
+
+// Filter out FragPtr's that do not fall within the size bounds
+void filterFragPtrsBySize(vector<FragPtr*>&v, int lowerSize, int upperSize)
+{
+    assert(lowerSize <= upperSize);
+    vector<FragPtr*>::iterator iter = v.begin();
+    const vector<FragPtr*>::iterator end = v.end();
+    vector<FragPtr*>::iterator loc = v.begin();
+    while(iter != end)
+    {
+        FragPtr* p = *iter;
+        if (p->pFrag_->size_ >= lowerSize && p->pFrag_->size_ < upperSize)
+        {
+            *loc = p;
+            loc++;
+        }
+        iter++;
+    }
+
+    size_t newSize = loc - v.begin();
+    v.resize(newSize);
+}
+
+bool FragDatabase::getFragPtrHits(IntPairVec& query, vector<FragPtr*>& hits)
+{
+
+    if (query.empty())
+        return false;
+
+    hits.clear();
+    const size_t numFrags = query.size();
+
+    // Populate the hits vector using the first set of bounds.
+    IntPairVec::const_iterator qi = query.begin();
+    int lb = qi->first; // lower bound of query
+    int ub = qi->second; // upper bound of query
+    assert(lb <= ub);
+    int lbi = lowerBound(lb);
+    int ubi = lowerBound(ub);
+    assert(lbi <= ubi);
+    hits.reserve(ubi - lbi + 1);
+    for(int i = lbi; i < ubi; i++)
+        hits.push_back(frags_[i]);
+
+    qi++;
+    for (; qi != query.end(); qi++)
+    {
+
+        // Increment all hits forward
+        incrementFragPtrs(hits);
+        int lb = qi->first; // lower bound of query
+        int ub = qi->second; // upper bound of query
+        assert(lb <= ub);
+
+        // Filter out FragPtrs based on rank.
+        filterFragPtrsBySize(hits, lb, ub);
+
+        if (hits.empty())
+            break;
+    }
+
+    // Decrement the FragPtr's by number of fragments in the query.
+    const size_t sizeBefore = hits.size();
+    for (size_t i = 0; i < numFrags-1; i++)
+        decrementFragPtrs(hits);
+    const size_t sizeAfter = hits.size();
+    assert(sizeBefore == sizeAfter);
+
+    return !hits.empty();
 }

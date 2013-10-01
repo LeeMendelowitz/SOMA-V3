@@ -1,11 +1,13 @@
-CXX=g++
 CXXFLAGS=-Wall -fopenmp
 IDIR=
 
+GTEST_INC = /home/lee/packages/gtest-1.7.0/include
 OBJDIR_RELEASE = ../build/release
 OBJDIR_DEBUG = ../build/debug
 LIBDIR_RELEASE = ../lib/release
 LIBDIR_DEBUG = ../lib/debug
+
+all: debug release testDatabase
 
 debug: CXXFLAGS += -DDEBUG -g -O0
 debug: OBJDIR = $(OBJDIR_DEBUG)
@@ -20,6 +22,11 @@ release: DIR=release
 release: ../bin/release/match
 
 testDatabase: ../test/bin/testDatabase
+testDatabase: CXXFLAGS += -DDEBUG -g -O0
+
+gtestDatabase: ../test/bin/gtestDatabase
+#gtestDatabase: CXXFLAGS += -DDEBUG -g -O0
+gtestDummy: ../test/bin/gtestDummy
 
 srcs=match.cc\
      globals.cc \
@@ -129,9 +136,14 @@ $(OBJS_RELEASE) : $(OBJDIR_RELEASE)/%.o: %.cc | $(OBJDIR_RELEASE)
 ../bin/debug/match: main.cc ../lib/debug/soma.a | ../build/debug ../lib/debug ../bin/debug
 	$(CXX) $(CXXFLAGS) main.cc ../lib/debug/soma.a  -o ../bin/debug/match
    
-# TO DO: Fix compilation issues 
 ../test/bin/testDatabase: ../test/testDatabase.cc ../lib/debug/soma.a | ../test/bin
-	$(CXX) $(CXXFLAGS) -I../test -I. ../test/testDatabase.cc $(LIBDIR_DEBUG)/soma.a -o ../test/bin/testDatabase
+	$(CXX) $(CXXFLAGS) -I../test -I. ../test/testDatabase.cc $(LIBDIR_DEBUG)/soma.a -o $@
+
+#../test/bin/gtestDatabase: ../test/gtest_database.cc ../lib/debug/soma.a | ../test/bin
+	#$(CXX) $(CXXFLAGS) -I../test -I. -I$(GTEST_INC) /usr/local/lib/gtest.a ../lib/debug/soma.a -o $@
+
+../test/bin/%: ../test/%.cc ../lib/debug/soma.a | ../test/bin
+	$(CXX) $(CXXFLAGS) -lpthread -I../test -I. -I$(GTEST_INC) /usr/local/lib/gtest.a ../lib/debug/soma.a -o $@
 
 .PHONY : clean
 clean:

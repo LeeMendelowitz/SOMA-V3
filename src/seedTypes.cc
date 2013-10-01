@@ -17,5 +17,10 @@ FragPtr::FragPtr(const FragPtr& other) :
     rank_(other.rank_)
 {};
 
-
-
+std::ostream& operator<<(std::ostream& o, const FragPtr& p)
+{
+    o << " Map: " << p.map_->getId()
+      << " index: " << p.getIndex()
+      << " size (bp): " << p.pFrag_->size_;
+    return o;
+}

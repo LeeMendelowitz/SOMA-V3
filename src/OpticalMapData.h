@@ -61,6 +61,8 @@ class OpticalMapData : public MapData
 
     FragDataVec::const_iterator getFragB() const { return frags_.begin(); }
     FragDataVec::const_iterator getFragE() const { return frags_.end(); }
+    FragDataVec::const_iterator getFragsB() const { return frags_.begin(); }
+    FragDataVec::const_iterator getFragsE() const { return frags_.end(); }
 
     private:
     vector<int> fragBoundaryBp_; // The boundaries (in bp) of the restriction fragments in map

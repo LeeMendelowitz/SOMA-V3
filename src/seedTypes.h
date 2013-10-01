@@ -2,6 +2,7 @@
 #define SEEDTYPES_H
 
 #include <vector>
+#include <ostream>
 
 #include "mapTypes.h"
 #include "OpticalMapData.h"
@@ -20,9 +21,12 @@ class FragPtr
     bool operator<(const FragPtr& other) const {
         return this->pFrag_->size_ < other.pFrag_->size_;
     }
+
     bool operator<(int fragSize) const {
         return this->pFrag_->size_ < fragSize;
     }
+
+    size_t getIndex() const { return pFrag_ - map_->getFragsB(); }
 
     // members
     std::vector<FragData>::const_iterator pFrag_; // pointer to the fragment
@@ -33,7 +37,7 @@ class FragPtr
 };
 
 
-
+std::ostream& operator<<(std::ostream& o, const FragPtr& p);
 
 
 
