@@ -39,6 +39,11 @@ class IndexVectorCmp_t
 };
 
 
+ScoreMatrix_t * createScoreMatrix1(const vector<FragData>& contigFrags, const vector<FragData>& opticalFrags,
+    const int numFragsInChromosome, const AlignmentParams& alignParams);
+ScoreMatrix_t * createScoreMatrix2(const vector<FragData>& contigFrags, const vector<FragData>& opticalFrags,
+    const int numFragsInChromosome, const AlignmentParams& alignParams);
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Populate a ScoreMatrix_t
 // Score all possible alignments
@@ -321,6 +326,72 @@ MatchResult *  match(const ContigMapData * pContigMap, const OpticalMapData * pO
 
     // Create the scoreMatrix
     ScoreMatrix_t * pScoreMatrix = createScoreMatrix2(contigFrags, opticalFrags, pOpticalMap->getNumFrags(), alignParams);
+
+    // Build matches from the score matrix
+    GlobalScorer scorer(alignParams);
+    StandardMatchMaker matchMaker(&scorer, opt::maxMatchesPerContig, opt::minContigHits,
+                                  opt::minLengthRatio, opt::maxMissRateContig, opt::avgChi2Threshold);
+    MatchResultPtrVec matches;
+    matchMaker.makeMatches(pScoreMatrix, matches, pOpticalMap, pContigMap, contigIsForward);
+
+    #if DEBUG_MATCH_GLOBAL > 0
+    std::cout << "Found " << matches.size()
+              << " matches for contig " << pContigMap->getId()
+              << " to " << pOpticalMap->getId()
+              << " in " << (contigIsForward ? " forward " : " reverse ") 
+              << " direction." << std::endl;
+    #endif
+
+    // Set the matches to be returned
+    if (!matches.empty())
+    {
+        // The first match is the best match
+        bestMatch = matches.front();
+
+        if (pAllMatches)
+        {
+            pAllMatches->insert(pAllMatches->end(), matches.begin(), matches.end());
+        }
+        else
+        {
+            // Delete all other matches other than the best match
+            const MatchResultPtrVec::iterator E = matches.end();
+            for(MatchResultPtrVec::iterator iter = matches.begin() + 1;
+                iter != E;
+                iter++)
+            {
+                delete *iter;
+            }
+            matches.resize(1);
+        }
+    }
+
+    #if DEBUG_MATCH_GLOBAL > 0
+    std::cout << "pAllMatches->size(): " << pAllMatches->size() << std::endl;
+    #endif
+
+    delete pScoreMatrix;
+    return bestMatch;
+}
+
+// Match the fragments from a single contig to the entire optical map
+// return the best match as a new MatchResult
+// if pAllMatches is not NULL, add all matches (inlcuding the best one) to pAllMatches vector.
+// This is a copy of the match() function, but to test the 
+MatchResult *  match2(const ContigMapData * pContigMap, const OpticalMapData * pOpticalMap,
+                     vector<MatchResult *> * pAllMatches, const AlignmentParams& alignParams)
+{
+    MatchResult * bestMatch = 0;
+    bool contigIsForward = pContigMap->isForward();
+    const vector<FragData>& opticalFrags = pOpticalMap->getFrags();
+    const vector<FragData>& contigFrags = pContigMap->getFrags();
+    //const int m = contigFrags.size() + 1; // num rows
+    //const int n = opticalFrags.size() + 1; // num cols
+    //const int lr = m-1;
+    //const int lro = lr*n;
+
+    // Create the scoreMatrix
+    ScoreMatrix_t * pScoreMatrix = createScoreMatrix1(contigFrags, opticalFrags, pOpticalMap->getNumFrags(), alignParams);
 
     // Build matches from the score matrix
     GlobalScorer scorer(alignParams);
