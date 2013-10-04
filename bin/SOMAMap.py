@@ -1,10 +1,15 @@
-#############################
+############################
 # File: SOMAMap.py
 # Author: Lee Mendelowitz (lmendelo@umiacs.umd.edu)
 #
 # Description:
 # Define the SOMA Map class for reading, writing, and creating restriction map
 # objects.
+#
+#
+# The SOMA map file is tab delimited with one record per line:
+# [MapId] [Length (bp)] [number of fragments] [frag 0 length (bp)] [frag 1 length (bp)] ...
+import sys
 
 class SOMAMap(object):
     def __init__(self, *args, **kwargs):
@@ -50,29 +55,30 @@ class SOMAMap(object):
             raise Exception('SOMAMap attributes are inconsistent!')
 
 
-# Read map file in the SOMA map format
-def readMaps(handle):
-    fin = handle
-    closeFile = False
-    if type(fin) is str:
-        fin = open(fin)
-        closeFile = True
-    maps = [SOMAMap(line=l) for l in fin]
-    mapDict = dict((m.mapId, m) for m in maps)
-    if closeFile:
-        fin.close()
-    return mapDict
-
-# Wrate maps to a file in the SOMA map format
-def writeMaps(mapList, handle):
-    fout = handle
-    closeFile = False
-    if type(handle) is str:
-        fout = open(handle, 'w')
-        closeFile = True
-
-    for map in mapList:
-        map.write(fout)
-
-    if closeFile:
-        fout.close()
+#########################################################
+# Smooth a map by removing small restriction fragments.
+def smooth(inputMap, minFrag=500):
+    frags = []
+    mergeCount = 0
+    fragGen = iter(inputMap.frags)
+    curFrag = []
+    for frag in fragGen:
+        curFrag = [frag]
+        curLength = frag
+        while curLength < minFrag:
+            try:
+                nextFrag = fragGen.next()
+                curFrag.append(nextFrag)
+                curLength += nextFrag
+                mergeCount += 1
+            except StopIteration:
+                break
+        assert(sum(curFrag) == curLength)
+        frags.append(curLength)
+        curFrag = []
+   
+    sys.stdout.write('smooth merged %i fragments out of %i.\n'%(mergeCount, len(inputMap.frags)))
+    outputMap = SOMAMap(frags=frags, mapId = inputMap.mapId)
+    assert(sum(outputMap.frags) == sum(inputMap.frags))
+    assert(outputMap.length == inputMap.length)
+    return outputMap

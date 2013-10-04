@@ -16,7 +16,7 @@
 import os
 import numpy as np
 import sys
-import SOMAMap
+import SOMAMap, SOMAMapUtils
 import scipy
 import subprocess
 import parseSomaMatch
@@ -51,7 +51,7 @@ class FragDatabase(object):
         return self.interiorFrags[ind]
 
     def addFragsFromMap(self, mapFileName):
-        mapDict = SOMAMap.readMaps(open(mapFileName))
+        mapDict = SOMAMapUtils.readMaps(open(mapFileName))
         for mapId, mapObj in mapDict.iteritems():
             frags = mapObj.frags
             if not frags:

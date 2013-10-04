@@ -47,7 +47,7 @@ namespace opt
 //    extern int maxGapSize;
     extern int numPermutationTrials;
     extern int numThreads;
-    extern int delta; // maximum number of unaligned sites in interior of alignment block
+    extern int maxChunkMisses; // maximum number of unaligned sites in interior of alignment block
     extern int smallFrag; // Cutoff of small fragments (bp)
     extern double smallFragSlope;
     extern bool localAlignment;

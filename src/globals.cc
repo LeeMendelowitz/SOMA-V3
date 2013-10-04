@@ -45,7 +45,7 @@ namespace opt
 //   int maxGapSize = 0; // Maximum open gap allowed for missed fragments
     int numPermutationTrials = 0;
     int numThreads = 1;
-    int delta = 5;
+    int maxChunkMisses = 5;
     int smallFrag = 2000; // Cutoff of small fragments (bp)
     double smallFragSlope = C_r_contig/smallFrag;
     bool localAlignment = false;

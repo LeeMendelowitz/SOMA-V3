@@ -14,6 +14,7 @@
 #include <omp.h>
 #include <cstdlib>
 #include <cassert>
+#include <ctime>
 
 #include "globals.h"
 #include "parseArgs.h"
@@ -39,6 +40,9 @@ typedef map<ContigMapData *, MatchResultPtrVec> MatchResultMap;
 
 int main(int argc, char ** argv)
 {
+
+    clock_t start_time = std::clock();
+
     // Parse command line arguments
     Parser::ArgParser * ap = Parser::ArgParser::instance();
     ap->parseArgs(argc, argv);
@@ -148,6 +152,10 @@ int main(int argc, char ** argv)
             delete *vecIter;
         opticalMaps.clear();
     }
+
+    clock_t end_time = std::clock();
+    float delta = ((float) (end_time - start_time))/CLOCKS_PER_SEC;
+    cout << delta << " seconds elapsed.\n";
 
     return EXIT_SUCCESS;
 }

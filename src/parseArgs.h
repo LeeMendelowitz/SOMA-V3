@@ -42,6 +42,7 @@ argpOption options[] = {
     {"maxMissRateContig", 0, "value", 0, "Maximum allowed fraction of contig restriction sites to be unused in an alignment. Default: 0.1",0},
     {"maxMatchesPerContig", 0, "value", 0, "Maximum matches reported per contig. Default: 5", 0},
     {"minSiteHits", 0, "value", 0, "Minimum number of aligned restriction sites for a match. Default: 5", 0},
+    {"maxChunkMisses", 0,       "value", 0, "Max. number of misses allowed inside an aligned chunk. Default: 5", 0},
     //{"falseCutRate", 0, "value", 0, "Average number of false cuts per bp in optical map. Note: If provided, allowFalseCuts must be provided.",0},
     {"numPermutationTrials", 0, "value", 0, "Number of trials for permutation test. Default: 0 (i.e. no test)",0},
     {"numThreads", 0, "value", 0, "Number of threads. Default: 1",0},
@@ -137,6 +138,7 @@ void ArgParser::printArgs()
               << "maxMatchesPerContig: " << opt::maxMatchesPerContig << "\n"
               << "maxMissRateContig: " << opt::maxMissRateContig << "\n"
               << "minSiteHits: " << opt::minContigHits << "\n"
+              << "maxChunkMisses: " << opt::maxChunkMisses << "\n"
               << "numPermutationTrials: " << opt::numPermutationTrials << "\n"
               << "numThreads: " << opt::numThreads << "\n"
               << "**********************************************\n";
@@ -184,6 +186,8 @@ error_t parse_opt(int key, char *arg, struct argp_state *state)
         opt::maxMatchesPerContig = atoi(arg);
     } else if (key == ap->getKey("minSiteHits")) {
         opt::minContigHits = atoi(arg);
+    } else if (key == ap->getKey("maxChunkMisses")) {
+        opt::maxChunkMisses = atoi(arg);
     } else if (key == ap->getKey("numPermutationTrials")) {
         opt::numPermutationTrials = atoi(arg);
     } else if (key == ap->getKey("numThreads")) {

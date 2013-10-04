@@ -17,7 +17,6 @@ from collections import Counter
 import parseSomaMatch
 import summarizeContigStatus
 import createScaffolds
-import make_opt
 import make_silico
 import SOMAMap
 import significanceTest
@@ -61,46 +60,13 @@ def getBaseName(inFile):
     return fileBaseName
 
 
-###################################################
-# Convert an optical map from the Schwartz lab format
-# to the SOMA format
-# opticalMapFile: optical map file in the Schwartz lab format
-def convertOpticalMaps(opticalMapFile, outputPfx):
-    opMapFileOut = '%s.opt'%outputPfx
-
-    msg = '\n'+'*'*50 + \
-          '\nReading Optical Map File %s\n'%opticalMapFile + \
-          '*'*50 + '\n'
-    sys.stderr.write(msg)
-
-    opMapList = make_opt.readMapDataSchwartz(opticalMapFile)
-    enzymeSet = set(om.enzyme for om in opMapList)
-    if len(enzymeSet) > 1:
-        raise RuntimeError('Different enzymes used in the input optical map set!')
-    enzyme = opMapList[0].enzyme
-
-    msg = '\n'+'*'*50 +\
-          '\nConverting Optical Map to SOMA Format\n' +\
-          '*'*50 + '\n'
-    sys.stderr.write(msg)
-
-    # Optical maps for chromosomes 
-    # Remove all white space from restriction map names
-    for opMap in opMapList:
-        opMap.mapId = ''.join(opMap.mapId.split())
-    SOMAMap.writeMaps(opMapList, opMapFileOut)
-    result = { 'enzyme' : enzyme,
-               'opMapList' : opMapList,
-               'opticalMapFile' : opMapFileOut}
-    return result
-
 
 #############################
 # opticalMapFile: optical map file in the Schwartz lab format
 # contigFile: fasta with contigs to be aligned to the optical map
 def createMaps(opticalMapFileIn, contigFile, outputPfx):
     contigMapFile = '%s.silico'%outputPfx
-    res = convertOpticalMaps(opticalMapFileIn, outputPfx)
+    res = SOMAMapUtils.convertOpticalMaps(opticalMapFileIn, outputPfx)
     opticalMapFile = res['opticalMapFile']
     enzyme = res['enzyme']
     if not os.path.exists(contigMapFile):
@@ -194,8 +160,8 @@ def postProcess(xmlFile, opticalMapFile, contigMapFile, outputPfx):
     parseSomaMatch.writeInfoFile2(ml, infoFileOut)
 
     # Summarize alignment status for contigs in the silicoFile
-    contigMapDict = SOMAMap.readMaps(contigMapFile)
-    opMapDict= SOMAMap.readMaps(opticalMapFile)
+    contigMapDict = SOMAMapUtils.readMaps(contigMapFile)
+    opMapDict= SOMAMapUtils.readMaps(opticalMapFile)
     summarizeContigStatus.summarizeContigStatus(outputPfx, sigMatchDict, contigMapDict)
 
     #  Print all of the alignments to a textFile

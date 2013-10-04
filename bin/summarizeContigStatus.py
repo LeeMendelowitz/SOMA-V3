@@ -4,7 +4,7 @@
 # aligned uniquely, numberOfQualityalignments, number of chromsomes aligned to
 import importSomaData
 import numpy as np
-import SOMAMap
+import SOMAMap, SOMAMapUtils
 import sys
 import os
 
@@ -18,7 +18,7 @@ def getBaseName(inFile):
 '''
 def getSpecialContigs():
     silicoFile = 'contigs.silico'
-    contigDict = SOMAMap.readMaps(silicoFile)
+    contigDict = SOMAMapUtils.readMaps(silicoFile)
     allFragLengths = np.concatenate([c.frag for c in contigDict.itervalues()])/1000.0
     allFragLengths = np.sort(allFragLengths)
     numFrags = allFragLengths.shape[0]

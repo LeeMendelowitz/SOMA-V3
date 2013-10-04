@@ -2,12 +2,16 @@ CXXFLAGS=-Wall -fopenmp
 IDIR=
 
 GTEST_INC = /home/lee/packages/gtest-1.7.0/include
+
 OBJDIR_RELEASE = ../build/release
 OBJDIR_DEBUG = ../build/debug
+OBJDIR_GPROF = ../build/gprof
+
 LIBDIR_RELEASE = ../lib/release
 LIBDIR_DEBUG = ../lib/debug
+LIBDIR_GPROF = ../lib/gprof
 
-all: debug release testDatabase
+all: debug release gprof testDatabase
 
 debug: CXXFLAGS += -DDEBUG -g -O0
 debug: OBJDIR = $(OBJDIR_DEBUG)
@@ -16,10 +20,18 @@ debug: DIR=debug
 debug: ../bin/debug/match
 
 release: CXXFLAGS += -O3 -DNDEBUG
-debug: OBJDIR = $(OBJDIR_RELEASE)
-debug: LIBDIR = $(LIBDIR_RELEASE)
+release: OBJDIR = $(OBJDIR_RELEASE)
+release: LIBDIR = $(LIBDIR_RELEASE)
 release: DIR=release
 release: ../bin/release/match
+
+gprof: CXXFLAGS += -DDEBUG -pg -O0
+gprof: OBJDIR = $(OBJDIR_DEBUG)
+gprof: LIBDIR = $(LIBDIR_DEBUG)
+gprof: DIR=gprof
+gprof: ../bin/gprof/match
+
+
 
 testDatabase: ../test/bin/testDatabase
 testDatabase: CXXFLAGS += -DDEBUG -g -O0
@@ -86,6 +98,7 @@ DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 OBJS = $(patsubst %.cc,$(OBJDIR)/%.o,$(srcs))
 OBJS_DEBUG = $(patsubst %.cc,$(OBJDIR_DEBUG)/%.o,$(srcs))
 OBJS_RELEASE = $(patsubst %.cc,$(OBJDIR_RELEASE)/%.o,$(srcs))
+OBJS_GPROF = $(patsubst %.cc,$(OBJDIR_GPROF)/%.o,$(srcs))
 
 
 $(OBJS_DEBUG) : $(OBJDIR_DEBUG)/%.o: %.cc | $(OBJDIR_DEBUG)
@@ -95,6 +108,10 @@ $(OBJS_DEBUG) : $(OBJDIR_DEBUG)/%.o: %.cc | $(OBJDIR_DEBUG)
 $(OBJS_RELEASE) : $(OBJDIR_RELEASE)/%.o: %.cc | $(OBJDIR_RELEASE)
 	@echo making release object $@
 	$(CXX) $(CXXFLAGS) -c $^ -o $@
+
+$(OBJS_GPROF) : $(OBJDIR_GPROF)/%.o: %.cc | $(OBJDIR_GPROF)
+	@echo making gprof object $@
+	$(CXX) $(CXXFLAGS) -c $^ -o $@
 	
 
 ####################################################
@@ -103,19 +120,23 @@ $(OBJS_RELEASE) : $(OBJDIR_RELEASE)/%.o: %.cc | $(OBJDIR_RELEASE)
 	@echo making release archive
 	ar rvs $@ $(OBJS_RELEASE)
 
+../lib/gprof/soma.a: $(OBJS_GPROF) | $(LIBDIR_GPROF)
+	@echo making gprof archive
+	ar rvs $@ $(OBJS_GPROF)
+
 ../lib/debug/soma.a: $(OBJS_DEBUG) | $(LIBDIR_DEBUG)
 	@echo making debug archive
 	ar rvs $@ $(OBJS_DEBUG)
 
 ############################################
 # Rule to create directories
-../build/release ../build/debug: | ../build
+../build/release ../build/debug ../build/gprof: | ../build
 	mkdir $@
 
-../lib/release ../lib/debug: | ../lib
+../lib/release ../lib/debug ../lib/gprof: | ../lib
 	mkdir $@
 
-../bin/release ../bin/debug: | ../bin
+../bin/release ../bin/debug ../bin/gprof: | ../bin
 	mkdir $@
 
 ../test/bin: | ../test
@@ -131,10 +152,15 @@ $(OBJS_RELEASE) : $(OBJDIR_RELEASE)/%.o: %.cc | $(OBJDIR_RELEASE)
 	#$(CXX) $(CXXFLAGS) main.cc ../lib/$@/soma.a  -o ../bin/$@/match
 
 ../bin/release/match: main.cc ../lib/release/soma.a | ../build/release ../lib/release ../bin/release
+	@echo "Building release version of SOMA"
 	$(CXX) $(CXXFLAGS) main.cc ../lib/release/soma.a  -o ../bin/release/match
 
 ../bin/debug/match: main.cc ../lib/debug/soma.a | ../build/debug ../lib/debug ../bin/debug
 	$(CXX) $(CXXFLAGS) main.cc ../lib/debug/soma.a  -o ../bin/debug/match
+
+../bin/gprof/match: main.cc ../lib/gprof/soma.a | ../build/gprof ../lib/gprof ../bin/gprof
+	$(CXX) $(CXXFLAGS) main.cc ../lib/gprof/soma.a  -o ../bin/gprof/match
+
    
 ../test/bin/testDatabase: ../test/testDatabase.cc ../lib/debug/soma.a | ../test/bin
 	$(CXX) $(CXXFLAGS) -I../test -I. ../test/testDatabase.cc $(LIBDIR_DEBUG)/soma.a -o $@
