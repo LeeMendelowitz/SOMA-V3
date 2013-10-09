@@ -1,0 +1,1 @@
+../../bin/SOMAMap.py
