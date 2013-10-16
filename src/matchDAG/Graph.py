@@ -2,6 +2,8 @@ import sys
 from StringIO import StringIO
 import numpy as np
 from operator import attrgetter
+from collections import defaultdict
+from datetime import datetime
 
 from Chunk import chunksFromMap
 
@@ -9,130 +11,6 @@ def DEBUG(msg):
     sys.stderr.write(msg)
     sys.stderr.flush()
 
-
-###########################################################################################
-# OLD CODE
-
-def buildGraph(queryMap, refChunkDB, maxMissesQuery=1, maxDepth=50, maxNodes=1000000):
-
-    # Build chunks on queryMap
-    queryChunks = chunksFromMap(queryMap, maxMisses = maxMissesQuery)
-
-    # Get Chunks that start with the beginning of the query.
-    startChunks = [c for c in queryChunks if c.bInd == 0]
-
-    startNodes = [Node.makeRoot(c, refChunkDB) for c in startChunks]
-
-    for s in startNodes:
-        buildGraphFromRoot(s, maxDepth=maxDepth, maxNodes=maxNodes)
-
-    return startNodes
-
-def bfsSummarize(root):
-    print root.summary()
-    curNodes = [root]
-    depth = 0
-    while curNodes:
-        print '\n\n\n\n'
-        print '*'*50
-        print 'Depth: %i Nodes: %i'%(depth, len(curNodes))
-        newNodes = []
-        for n in curNodes:
-            print n.summary()
-            newNodes.extend(n.children)
-        curNodes = newNodes
-        depth += 1
-        sys.stdout.flush()
-        sys.stdout.write('[ENTER]\n')
-        sys.stdout.flush()
-        sys.stdin.readline()
-
-
-def buildGraphFromRoot(root, maxDepth=20, maxNodes=1000000):
-    depth = 0    
-    nodeCount = 1
-    leaves = [root]
-
-    while (depth < maxDepth) and (nodeCount < maxNodes) and leaves:
-        DEBUG("*"*50 + '\n')
-        DEBUG("Cur depth: %i Num Leaves: %i\n"%(depth, len(leaves)))
-
-        newLeaves = []
-        for l in leaves:
-            l.makeChildren()
-            newLeaves.extend(l.children)
-            nodeCount += len(l.children)
-            if nodeCount > maxNodes:
-                DEBUG("Exceeded max node count! Have %i nodes\n"%nodeCount)
-                break
-        leaves = newLeaves
-        depth += 1
-
-    if depth >= maxDepth:
-        DEBUG("Reached max depth %i\n"%depth)
-
-
-class Node(object):
-    """
-    Node in the match search tree.
-    """
-    def __init__(self):
-        pass
-       
-    @staticmethod
-    def makeRoot(queryChunk, refChunkDB, tol=0.10, minDelta=1000):
-        N = Node()
-        N.queryChunk = queryChunk
-
-        # Query the refChunkDB for the compatible reference chunks.
-        delta = max(minDelta, tol*queryChunk.size)
-        lb, ub = queryChunk.size - delta, queryChunk.size + delta
-        N.refChunks = refChunkDB.getChunks(lb, ub)
-        N.children = []
-        return N
-
-    @staticmethod
-    def makeChild(queryChunk, refChunks):
-        N = Node()
-        N.queryChunk = queryChunk
-        N.refChunks = refChunks
-        N.children = []
-        return N
-
-    def makeChildren(self, tol=0.10, minDelta=1000):
-        self.children = []
-
-        """
-        DEBUG('Making children for %s\n'%self.queryChunk)
-        DEBUG('Query has %i successors\n'%len(self.queryChunk.successors))
-        DEBUG('Query has %i reference chunks\n'%len(self.refChunks))
-        """
-
-        for querySuccessor in self.queryChunk.successors:
-            DEBUG("Working query successor: %s\n"%str(querySuccessor))
-            delta = max(minDelta, tol*querySuccessor.size)
-            lb = querySuccessor.size - delta
-            ub = querySuccessor.size + delta
-            compatibleRefs = [refChunkSuccessor for refChunk in self.refChunks for refChunkSuccessor in refChunk.successors
-                              if lb <= refChunkSuccessor.size <= ub]
-            DEBUG("Found %i compatible refs\n"%len(compatibleRefs))
-            if compatibleRefs:
-                self.children.append(Node.makeChild(querySuccessor, compatibleRefs))
-        DEBUG("Made %i children\n"%len(self.children))
- 
-    def summary(self):
-        s = StringIO()
-        w = s.write
-        w('Node Summary:\n')
-        w('Query Fragment: %s\n'%self.queryChunk)
-        w('Num. Ref Chunks: %i\n'%len(self.refChunks))
-        w('Num. of Children: %i\n'%len(self.children))
-        out = s.getvalue()
-        s.close()
-        return out
-
-# DONE OLD CODE
-##########################################################################
 
 #################################################################
 class ChunkPairNode(object):
@@ -146,9 +24,154 @@ class ChunkPairNode(object):
         self.numQueryMisses = numQueryMisses
         self.numRefMisses = numRefMisses
 
+
+# Check if chunks are compatible
+def chunksCompatible(chunk1, chunk2, minDist, maxDist, minSites, maxSites):
+    """
+    Two chunks are compatible if they are from the same map, if the distance
+    separating them is within the bounds, and if the number of interior sites is within the bounds.
+    """
+    if not (minDist <= maxDist):
+        raise RuntimeError('minDist must be less than maxDist')
+
+    if not (minSites <= maxSites):
+        raise RuntimeError('minSites must be less than maxSites')
+
+    if chunk1.map.mapId != chunk2.map.mapId:
+        return False
+
+    if chunk1.bInd < chunk2.bInd:
+        leftChunk, rightChunk = chunk1, chunk2
+    else:
+        leftChunk, rightChunk = chunk2, chunk1
+    
+    dist = rightChunk.leftPos - leftChunk.rightPos
+    numSites = rightChunk.bInd - leftChunk.eInd
+
+    return (minDist <= dist <= maxDist) and (minSites <= numSites <= maxSites)
+
+class GraphBuilderDoubleSided(object):
+
+    @staticmethod
+    def markRight(chunkPairs):
+        for q,r in chunkPairs:
+            r._rmark = True
+            if hasattr(r, '_qChunks'):
+                r._qChunks.append(q)
+            else:
+                r._qChunks = [q]
+
+    @staticmethod
+    def unmarkRight(chunkPairs):
+        refChunks = (r for q,r in chunkPairs)
+        for chunk in refChunks:
+            if hasattr(chunk, '_rmark'):
+                del chunk._rmark
+            if hasattr(chunk, '_qChunks'):
+                del chunk._qChunks
+
+    @staticmethod
+    def unmarkRight2(chunkPairs):
+        refChunks = (r for q,r in chunkPairs)
+        for chunk in refChunks:
+            try:
+                del chunk_rmark
+            except AttributeError:
+                pass
+            try:
+                del chunk._qChunks
+            except AttributeError:
+                pass
+
+    def getChunkPairs(self, minDist, maxDist, minSites, maxSites):
+
+        # Mark the right reference chunks
+        self.markRight(self.endPairs)
+
+        # For each left reference chunk, search for a marked right reference chunk
+        # within the distance bounds.
+
+
+        # Unmark the right reference chunks
+        self.unmarkRight(self.endPairs)
+
+    def __init__(self, queryMap, refChunkDB, tol=0.10, minDelta=1000, maxNodes=100000, maxMissRate = 0.5, maxQueryMisses=3, maxRefMisses=3):
+
+        # Generate all chunks from the queryMap
+        qChunks = chunksFromMap(queryMap, maxQueryMisses)
+        qsChunks = [c for c in qChunks if c.bInd == 0]
+        qeChunks = [c for c in qChunks if c.eInd == queryMap.numFrags]
+        DEBUG('Have %i query start chunks.\n'%len(qsChunks))
+        DEBUG('Have %i query end chunks.\n'%len(qeChunks))
+
+        compatiblePairs = []
+
+        def getRefMatches(q):
+            delta = max(minDelta, tol*q.size)
+            lb, ub = q.size - delta, q.size + delta
+            refChunks = refChunkDB.getChunks(lb, ub)
+            return refChunks
+
+        # Compute starting/ending chunks pairs
+        DEBUG('Buildling startPairs/endPairs\n')
+        startPairs = [(q, r) for q in qsChunks for r in getRefMatches(q)]
+        DEBUG('Made %i startPairs\n'%len(startPairs))
+        endPairs = [(q,r) for q in qeChunks for r in getRefMatches(q)]
+        DEBUG('Made %i endPairs\n'%len(endPairs))
+        return
+
+        self.startPairs = startPairs
+        self.endPairs = endPairs
+
+        self.qToRStart = defaultdict(list)
+        self.qToREnd = defaultdict(list)
+
+        for q,r in self.endPairs:
+            if not hasattr(r, '_qEndList'):
+                r._qEndList = [q]
+            else:
+                r._qEndList.append(q)
+
+
+        # Bin by reference map
+        refMapToStartPairs = defaultdict(list)
+        refMapToEndPairs = defaultdict(list)
+        for qs,rs in startPairs:
+            refMapToStartPairs[rs.map].append((qs,rs))
+        for qe,re in endPairs:
+            refMapToEndPairs[re.map].append((qe,re))
+        self.refMapToStartPairs = refMapToStartPairs
+        self.refMapToEndPairs = refMapToEndPairs
+
+        allMaps = list(set(refMapToStartPairs.keys() + refMapToEndPairs.keys()))
+        for m in allMaps:
+            mapStartPairs = refMapToStartPairs[m]
+            mapEndPairs = refMapToEndPairs[m]
+            DEBUG("map:%s startPairs:%i endPairs:%i\n"%(m.mapId, len(mapStartPairs), len(mapEndPairs)))
+            for startPair in mapStartPairs:
+                qs,rs = startPair
+                for endPair in mapEndPairs:
+                    qe,re = endPair
+                    numQuerySites = qe.bInd - qs.eInd
+                    queryDist =  qe.leftPos - qs.rightPos
+                    delta = max(minDelta, tol*queryDist)
+                    minRefDist = queryDist - delta
+                    maxRefDist = queryDist + delta
+                    deltaSites = maxMissRate*numQuerySites
+                    minRefSites = numQuerySites - deltaSites
+                    maxRefSites = numQuerySites + deltaSites
+                    if chunksCompatible(rs, re, minRefDist, maxRefDist, minRefSites, maxRefSites):
+                        compatiblePairs.append((startPair, endPair))
+
+        self.compatiblePairs = compatiblePairs
+        DEBUG('Found %i compatible pairs.\n'%len(compatiblePairs))
+
+
 class GraphBuilder(object):
 
     def __init__(self, queryChunk, refChunkDB, tol=0.10, minDelta=1000, maxNodes=100000, maxMissRate = 0.5):
+
+        start = datetime.now()
 
         self.roots = []
         self.graphs = []
@@ -162,6 +185,7 @@ class GraphBuilder(object):
         delta = max(minDelta, tol*queryChunk.size)
         lb, ub = queryChunk.size - delta, queryChunk.size + delta
         refChunks = refChunkDB.getChunks(lb, ub)
+        DEBUG('Have %i ref chunks\n'%len(refChunks))
         for refChunk in refChunks:
             numQueryMisses = queryChunk.numFrags - 1
             numRefMisses = refChunk.numFrags - 1
@@ -174,6 +198,10 @@ class GraphBuilder(object):
         self.graphs = sorted(self.graphs, key = attrgetter('numNodes'), reverse=True)
         numPaths = sum(g.numLeaves for g in self.graphs)
         DEBUG('Made %i paths\n'%numPaths)
+
+        end = datetime.now()
+        delta = (end-start).total_seconds()
+        DEBUG("%.2f seconds elapsed\n'"%delta)
 
     def dumpDebug(self, handle=None):
 
@@ -366,3 +394,195 @@ class Scorer(object):
         score.numRefMisses = numRefMisses
         score.numQueryMisses = numQueryMisses
         return score
+
+########################################################################################
+
+
+
+class Node3(object):
+
+    def __init__(self, queryChunk, refChunks, parent = None):
+        self.queryChunk = queryChunk
+        self.refChunks = refChunks
+        self.parent = parent
+
+
+def leftRightIntersect(leftNode, rightNodes):
+    """
+    Take the intersection by keeping chunks in the left chunkset with
+    a successor in the rightChunkSet.
+    Return the new left set.
+    """
+    rightNodeCoordUnion = set()
+    for rn in rightNodes:
+        rightNodeCoordUnion = rightNodeCoordUnion.union(rn._refChunkCoordSet)
+
+    leftChunks = [c for c in leftNode._refChunks if (c.map, c.eInd) in rightNodeCoordUnion]
+    leftNode._refChunks = leftChunks
+    leftNode._refChunkCoordSet = set((c.map, c.bInd) for c in leftChunks)
+    return leftChunks
+
+class GraphBuilder3(object):
+
+    def addRefChunks(self):
+        """
+        Add compatible reference chunks to each query chunk.
+        """
+        queryChunks = self.qChunks
+        qToRefMatches = self.qToRefMatches
+
+        for q in queryChunks:
+            refChunks = qToRefMatches[q]
+            q._refChunks = refChunks
+            #q._refChunkCoordSet = set((c.map, c.bInd) for c in refChunks)
+            q._refChunkCoordSet = set()
+
+    def delRefChunks(self):
+        """
+        Remove compatible reference chunks from each query chunk.
+        """
+        for q in self.qChunks:
+            del q._refChunks
+
+    def __init__(self, queryMap, refChunkDB, tol=0.10, minDelta=1000, maxNodes=100000, maxMissRate = 0.5, maxQueryMisses=3, maxRefMisses=3):
+
+        start = datetime.now()
+
+        # Generate all chunks from the queryMap
+        qChunks = chunksFromMap(queryMap, maxQueryMisses)
+        DEBUG('Have %i query chunks.\n'%len(qChunks))
+
+        def getRefMatches(q):
+            delta = max(minDelta, tol*q.size)
+            lb, ub = q.size - delta, q.size + delta
+            refChunks = refChunkDB.getChunks(lb, ub)
+            return refChunks
+
+        # Index query chunks based on where they start/end
+        qStartToChunk = defaultdict(list)
+        qEndToChunk = defaultdict(list)
+        for q in qChunks:
+            qStartToChunk[q.bInd].append(q)
+            qEndToChunk[q.eInd].append(q)
+        qsChunks = qStartToChunk[0]
+        qeChunks = qEndToChunk[queryMap.numFrags]
+        self.qChunks = qChunks
+
+        # For each chunk in the query, find all matches in the reference
+        DEBUG('Aligning each query chunk...')
+        refMatches = [getRefMatches(q) for q in qChunks]
+        DEBUG('DONE.\n')
+
+        qToRefMatches = dict((q,rl) for q,rl in zip(qChunks, refMatches))
+
+        # Store in self
+        self.qStartToChunk = qStartToChunk
+        self.qEndToChunk = qEndToChunk
+        self.qsChunks = qsChunks
+        self.qeChunks = qeChunks
+        self.refMatches = refMatches
+        self.qToRefMatches = qToRefMatches
+
+        # Build a set on the alignments
+        DEBUG('Adding ref chunks...\n')
+        #matchSet = set((q,r) for q,rl in zip(qChunks, refMatches) for r in rl)
+        #matchD = dict((q,set(rl)) for q,rl in zip(qChunks, refMatches))
+        self.addRefChunks()
+        DEBUG('DONE!\n')
+        numPlacementsStart = sum(len(q._refChunks) for q in qsChunks)
+        DEBUG('Have %i placements for start chunks.\n'%numPlacementsStart)
+
+        # Sort chunks from left to right based on where they end.
+        qChunksSorted = sorted(qChunks, key = lambda c: (c.eInd, c.bInd), reverse=True)
+
+        for qChunk in qChunksSorted:
+            if not qChunk.successors:
+                continue
+            qChunk._refChunks = leftRightIntersect(qChunk, qChunk.successors)
+
+        numPlacementsStart = sum(len(q._refChunks) for q in qsChunks)
+        DEBUG('After pruning: Have %i placements for start chunks.\n'%numPlacementsStart)
+
+        self.roots = []
+        self.graphs = []
+
+        end = datetime.now()
+        delta = (end-start).total_seconds()
+        DEBUG('%.2f seconds have elapsed\n'%(delta))
+
+        # Build search graph for each 
+
+        self.graphs = sorted(self.graphs, key = attrgetter('numNodes'), reverse=True)
+        numPaths = sum(g.numLeaves for g in self.graphs)
+        DEBUG('Made %i paths\n'%numPaths)
+
+
+
+    def buildGraph(self, queryChunk, refChunkDB, tol=0.10, minDelta=1000, maxNodes=100000, maxMissRate = 0.5):
+
+        start = datetime.now()
+
+        # Determine how many missed sites are permitted interior to global alignment
+        numQueryFrags = queryChunk.map.numFrags
+        maxMisses = maxMissRate*(numQueryFrags + 1)
+
+        roots = []
+        for refChunk in queryChunk._refChunks:
+            numQueryMisses = queryChunk.numFrags - 1
+            numRefMisses = refChunk.numFrags - 1
+            roots.append(ChunkPairNode(None, queryChunk, refChunk, numQueryMisses, numRefMisses))
+
+        self.roots.extend(roots)
+
+        # For each match, build a search tree.
+        graphs = []
+        for root in roots:
+            G = Graph(root, maxMisses=maxMisses)
+            graphs.append(G)
+
+        self.graphs.extend(graphs)
+
+        end = datetime.now()
+        delta = (end-start).total_seconds()
+        DEBUG("%.2f seconds elapsed\n'"%delta)
+
+    def dumpDebug(self, handle=None):
+
+        opened = False
+        if handle is None:
+            opened = True
+            handle = open('debug.out', 'w')
+        elif isinstance(handle, str):
+            opened=True
+            handle = open(handle, 'w')
+
+        # Dump debug information for each graph
+        numPaths = sum(g.numLeaves for g in self.graphs)
+        handle.write('numGraphs:%i\t'%len(self.graphs))
+        handle.write('numPaths:%i\t'%numPaths)
+        handle.write('\n')
+        for g in self.graphs:
+            g.dumpDebug(handle)
+        if opened:
+            handle.close()
+
+    def getStartPlacements(self):
+        return set(c for q in self.qsChunks for c in q._refChunks)
+
+    def buildFromRoot(self, root):
+        leafs = [root]
+        done = False
+
+        while not done:
+
+            for l in leafs:
+
+                # Get each query successor of the queryChunk
+                for qNext in l.queryChunk.successors:
+
+                    rightRefChunkSet = qNext._refPredecessorChunkSet
+                    # Take the in
+
+
+
+

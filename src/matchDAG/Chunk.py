@@ -39,6 +39,22 @@ class Chunk(object):
     def numInteriorSites(self):
         return self.numFrags - 1
 
+    @property
+    def leftPos(self):
+        return sum(self.map.frags[0:self.bInd])
+
+    @property
+    def startPos(self):
+        return self.leftPos
+
+    @property
+    def endPos(self):
+        return self.rightPos
+
+    @property
+    def rightPos(self):
+        return self.leftPos + sum(self.map.frags[self.bInd:self.eInd])
+
     def __str__(self):
         fields = [self.map.mapId, self.bInd, self.eInd, self.size]
         fields = [str(f) for f in fields]
@@ -92,7 +108,7 @@ def _genChunksFromMap(m, maxMisses):
     N = len(m.frags)
     for i in xrange(N):
         s = 0
-        for j in xrange(i+1, min(i+maxMisses+2, N)):
+        for j in xrange(i+1, min(i+maxMisses+1, N)+1):
             s += m.frags[j-1]
             #s = sum(m.frags[i:j])
             C = Chunk(m, i, j, s)
