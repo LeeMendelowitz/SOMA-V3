@@ -67,12 +67,17 @@ ScoreMatrix_t * createScoreMatrix1(const vector<FragData>& contigFrags, const ve
     ScoreElement_t * pCur,  * pPrev;
     for (int i=1; i < m; i++)
     {
-        pPrev = &(pScoreMatrix->d_[(i-1)*n]);
-        pCur = &(pScoreMatrix->d_[i*n]);
-        pCur -> pi_ = i-1;
-        pCur -> pj_ = 0;
-        // Calc score for gapped alignment
-        pCur -> score_ = pPrev -> score_ + gapPenalty(contigFrags[i-1].size_, alignParams);
+        if (opt::allowGaps)
+        {
+            pCur = &(pScoreMatrix->d_[i*n]);
+            pPrev = &(pScoreMatrix->d_[(i-1)*n]);
+            pCur -> pi_ = i-1;
+            pCur -> pj_ = 0;
+            // Calc score for gapped alignment
+            pCur -> score_ = pPrev -> score_ + gapPenalty(contigFrags[i-1].size_, alignParams);
+        }
+        else
+            pScoreMatrix->d_[i*n] = ScoreElement_t(-Constants::INF, -1, -1);
     }
 
     // Initialze rest of table
@@ -97,8 +102,8 @@ ScoreMatrix_t * createScoreMatrix1(const vector<FragData>& contigFrags, const ve
             pCur = &pScoreMatrix->d_[i*n+j];
 
             // Determine eligible extensions
-            i1 = max(0, i-alignParams.delta-1);
-            j1 = max(0, j-alignParams.delta-1); 
+            i1 = max(0, i-alignParams.maxChunkMissesQuery-1);
+            j1 = max(0, j-alignParams.maxChunkMissesReference-1); 
             cFragLength = 0;
             for (int k = i-1; k >= i1; k--) // Loop over contig frags for alignment block
             {
@@ -125,15 +130,17 @@ ScoreMatrix_t * createScoreMatrix1(const vector<FragData>& contigFrags, const ve
             } // end l loop
 
             // Try a gap open/extension
-            pPrev = &pScoreMatrix->d_[(i-1)*n+j];
-            if (pPrev->score_ > -Constants::INF)
-            {
-                newScore = pPrev->score_ + gapPenalty(cFrag, alignParams);
-                if (newScore > pCur->score_)
+            if (opt::allowGaps) {
+                pPrev = &pScoreMatrix->d_[(i-1)*n+j];
+                if (pPrev->score_ > -Constants::INF)
                 {
-                    pCur->score_ = newScore;
-                    pCur->pi_ = i-1;
-                    pCur->pj_ = j;
+                    newScore = pPrev->score_ + gapPenalty(cFrag, alignParams);
+                    if (newScore > pCur->score_)
+                    {
+                        pCur->score_ = newScore;
+                        pCur->pi_ = i-1;
+                        pCur->pj_ = j;
+                    }
                 }
             }
         } // end j loop
@@ -169,12 +176,16 @@ ScoreMatrix_t * createScoreMatrix2(const vector<FragData>& contigFrags, const ve
     ScoreElement_t * pCur,  * pPrev;
     for (int i=1; i < m; i++)
     {
-        pPrev = &(pScoreMatrix->d_[(i-1)*n]);
-        pCur = &(pScoreMatrix->d_[i*n]);
-        pCur -> pi_ = i-1;
-        pCur -> pj_ = 0;
-        // Calc score for gapped alignment
-        pCur -> score_ = pPrev -> score_ + gapPenalty(contigFrags[i-1].size_, alignParams);
+        if (opt::allowGaps) {
+            pPrev = &(pScoreMatrix->d_[(i-1)*n]);
+            pCur = &(pScoreMatrix->d_[i*n]);
+            pCur -> pi_ = i-1;
+            pCur -> pj_ = 0;
+            // Calc score for gapped alignment
+            pCur -> score_ = pPrev -> score_ + gapPenalty(contigFrags[i-1].size_, alignParams);
+        } else {
+            pScoreMatrix->d_[i*n] = ScoreElement_t(-Constants::INF, -1, -1);
+        }
     }
 
     // Initialze rest of table
@@ -203,8 +214,8 @@ ScoreMatrix_t * createScoreMatrix2(const vector<FragData>& contigFrags, const ve
             pCur = &pScoreMatrix->d_[i*n+j];
 
             // Determine eligible extensions
-            i1 = max(0, i-alignParams.delta);
-            j1 = max(0, j-alignParams.delta); 
+            i1 = max(0, i-alignParams.maxChunkMissesQuery - 1);
+            j1 = max(0, j-alignParams.maxChunkMissesReference - 1); 
             for (int k = i-1; k >= i1; k--) // Loop over contig frags for alignment block
             {
                 cbB = cB + k;
@@ -227,15 +238,17 @@ ScoreMatrix_t * createScoreMatrix2(const vector<FragData>& contigFrags, const ve
             } // end l loop
 
             // Try a gap open/extension
-            pPrev = &pScoreMatrix->d_[(i-1)*n+j];
-            if (pPrev->score_ > -Constants::INF)
-            {
-                newScore = pPrev->score_ + gapPenalty(cFragSize, alignParams);
-                if (newScore > pCur->score_)
+            if (opt::allowGaps) {
+                pPrev = &pScoreMatrix->d_[(i-1)*n+j];
+                if (pPrev->score_ > -Constants::INF)
                 {
-                    pCur->score_ = newScore;
-                    pCur->pi_ = i-1;
-                    pCur->pj_ = j;
+                    newScore = pPrev->score_ + gapPenalty(cFragSize, alignParams);
+                    if (newScore > pCur->score_)
+                    {
+                        pCur->score_ = newScore;
+                        pCur->pi_ = i-1;
+                        pCur->pj_ = j;
+                    }
                 }
             }
         } // end j loop
@@ -278,8 +291,8 @@ ScoreMatrix_t * createLocalScoreMatrix(const vector<FragData>& contigFrags, cons
             pCur = &pScoreMatrix->d_[i*n+j];
 
             // Determine eligible extensions
-            i1 = max(0, i-alignParams.delta-1);
-            j1 = max(0, j-alignParams.delta-1); 
+            i1 = max(0, i-alignParams.maxChunkMissesQuery-1);
+            j1 = max(0, j-alignParams.maxChunkMissesReference-1); 
             cFragLength = 0;
             for (int k = i-1; k >= i1; k--) // Loop over contig frags for alignment block
             {

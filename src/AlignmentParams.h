@@ -9,7 +9,7 @@ class AlignmentParams
 {
     public:
     AlignmentParams(double C_r_contig_in, double C_r_optical_in, double C_sigma_in,
-                    double sigma2_in, int delta_in,
+                    double sigma2_in, int maxChunkMissesQuery_in, int maxChunkMissesReference_in,
                     double smallFrag_in, double smallFragSlope_in,
                     double H_in, double T_in)
     {
@@ -17,7 +17,8 @@ class AlignmentParams
         C_r_optical = C_r_optical_in;
         chi2Max = C_sigma_in * C_sigma_in;
         sigma2 = sigma2_in;
-        delta = delta_in;
+        maxChunkMissesQuery = maxChunkMissesQuery_in;
+        maxChunkMissesReference = maxChunkMissesReference_in;
 
         smallFrag = smallFrag_in;
         smallFragSlope = smallFragSlope_in;
@@ -33,7 +34,8 @@ class AlignmentParams
     double C_r_optical; // Cost of missing a restriction site in the optical map
     double chi2Max; // The maximum allowed length difference for aligned fragments, in variance units.
     double sigma2; // The parameter for sigma^2 for computing the variance
-    int delta; // Maximum number of unaligned sites inside an alignment block
+    int maxChunkMissesQuery; // Maximum number of unaligned sites inside an alignment block
+    int maxChunkMissesReference; // Maximum number of unaligned sites inside an alignment block
 
     // Params for penalizing gapped contig fragments
     // or missed contig sites in small fragments

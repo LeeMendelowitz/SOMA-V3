@@ -33,7 +33,7 @@ argpOption options[] = {
     {"oneToOneMatch", 0, 0, 0, "Match the entire contig to the entire optical map",0},
     {"noBoundaries", 0, 0, 0, "Do not treat the first/last contig restriction fragment as a boundary fragment",0},
 //	{"matchFragmentOnce", 0, 0, 0, "greedily match at most one contig to an optical fragment. Default is to allow multiple matches",0},
-//	{"allowGaps", 0, 0, 0, "Allow gaps in alignments.",0},
+	{"allowGaps", 0, 0, 0, "Allow gaps in alignments.",0},
 	{"sdMin", 0, "val", 0, "Initial value for the standard deviation threshold. Default: 4",0},
 	{"sdMax", 0, "val", 0, "Final value for the standard deviation threshold. Default: 12",0},
 	{"pvalue", 0, "threshold", 0, "p-value threshold for permutation test. Default: 0.05",0},
@@ -42,7 +42,8 @@ argpOption options[] = {
     {"maxMissRateContig", 0, "value", 0, "Maximum allowed fraction of contig restriction sites to be unused in an alignment. Default: 0.1",0},
     {"maxMatchesPerContig", 0, "value", 0, "Maximum matches reported per contig. Default: 5", 0},
     {"minSiteHits", 0, "value", 0, "Minimum number of aligned restriction sites for a match. Default: 5", 0},
-    {"maxChunkMisses", 0,       "value", 0, "Max. number of misses allowed inside an aligned chunk. Default: 5", 0},
+    {"maxChunkMissesQuery", 0,       "value", 0, "Max. number of misses allowed inside an aligned query chunk. Default: 0", 0},
+    {"maxChunkMissesReference", 0,       "value", 0, "Max. number of misses allowed inside an aligned reference chunk. Default: 3", 0},
     //{"falseCutRate", 0, "value", 0, "Average number of false cuts per bp in optical map. Note: If provided, allowFalseCuts must be provided.",0},
     {"numPermutationTrials", 0, "value", 0, "Number of trials for permutation test. Default: 0 (i.e. no test)",0},
     {"numThreads", 0, "value", 0, "Number of threads. Default: 1",0},
@@ -126,7 +127,7 @@ void ArgParser::printArgs()
               << "noReverse: " << opt::noReverse << "\n"
               << "oneToOneMatch: " << opt::oneToOneMatch << "\n"
               << "useBoundaries: " << opt::useBoundaries << "\n"
-//              << "allowGaps: " << opt::allowGaps << "\n"
+              << "allowGaps: " << opt::allowGaps << "\n"
               << "sdMin: " << opt::sdMin << "\n"
               << "sdMax: " << opt::sdMax << "\n"
   //            << "maxGapSize: " << opt::maxGapSize << "\n"
@@ -138,7 +139,8 @@ void ArgParser::printArgs()
               << "maxMatchesPerContig: " << opt::maxMatchesPerContig << "\n"
               << "maxMissRateContig: " << opt::maxMissRateContig << "\n"
               << "minSiteHits: " << opt::minContigHits << "\n"
-              << "maxChunkMisses: " << opt::maxChunkMisses << "\n"
+              << "maxChunkMissesQuery: " << opt::maxChunkMissesQuery << "\n"
+              << "maxChunkMissesReference: " << opt::maxChunkMissesReference << "\n"
               << "numPermutationTrials: " << opt::numPermutationTrials << "\n"
               << "numThreads: " << opt::numThreads << "\n"
               << "**********************************************\n";
@@ -156,9 +158,9 @@ error_t parse_opt(int key, char *arg, struct argp_state *state)
         opt::localAlignment = true;
     //} else if (key == ap->getKey("allowFalseCuts") ) {
      //   opt::allowFalseCuts = true;
-    //} else if (key == ap->getKey("allowGaps") ) {
-        //opt::allowGaps = true;
-    //} else if (key == ap->getKey("matchFragmentOnce") ) {
+    } else if (key == ap->getKey("allowGaps") ) {
+        opt::allowGaps = true;
+    } else if (key == ap->getKey("matchFragmentOnce") ) {
         //opt::matchFragmentOnce = true;
     } else if (key == ap->getKey("noReverse") ) {
         opt::noReverse = true;
@@ -186,8 +188,10 @@ error_t parse_opt(int key, char *arg, struct argp_state *state)
         opt::maxMatchesPerContig = atoi(arg);
     } else if (key == ap->getKey("minSiteHits")) {
         opt::minContigHits = atoi(arg);
-    } else if (key == ap->getKey("maxChunkMisses")) {
-        opt::maxChunkMisses = atoi(arg);
+    } else if (key == ap->getKey("maxChunkMissesQuery")) {
+        opt::maxChunkMissesQuery = atoi(arg);
+    } else if (key == ap->getKey("maxChunkMissesReference")) {
+        opt::maxChunkMissesReference = atoi(arg);
     } else if (key == ap->getKey("numPermutationTrials")) {
         opt::numPermutationTrials = atoi(arg);
     } else if (key == ap->getKey("numThreads")) {

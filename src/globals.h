@@ -27,7 +27,7 @@ namespace opt
     extern bool noReverse;
     extern bool oneToOneMatch;
     extern bool useBoundaries; // if true, treat first and last contig fragment as boundary fragment (bounded by only 1 restriction site, instead of 2).
-//    extern bool allowGaps;
+    extern bool allowGaps;
     extern double pThreshold;
     extern string outputPrefix;
     extern double sdMin;
@@ -47,7 +47,8 @@ namespace opt
 //    extern int maxGapSize;
     extern int numPermutationTrials;
     extern int numThreads;
-    extern int maxChunkMisses; // maximum number of unaligned sites in interior of alignment block
+    extern int maxChunkMissesQuery; // maximum number of unaligned sites in interior of alignment block
+    extern int maxChunkMissesReference; // maximum number of unaligned sites in interior of alignment block
     extern int smallFrag; // Cutoff of small fragments (bp)
     extern double smallFragSlope;
     extern bool localAlignment;

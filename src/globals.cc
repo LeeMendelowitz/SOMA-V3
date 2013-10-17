@@ -25,7 +25,7 @@ namespace opt
     bool   noReverse = false;
     bool   oneToOneMatch = false;
     bool   useBoundaries = true;
-//   bool   allowGaps = false;
+    bool   allowGaps = false;
     double pThreshold = 0.05;
     string outputPrefix = "output";
     double sdMin = 4;
@@ -45,7 +45,8 @@ namespace opt
 //   int maxGapSize = 0; // Maximum open gap allowed for missed fragments
     int numPermutationTrials = 0;
     int numThreads = 1;
-    int maxChunkMisses = 5;
+    int maxChunkMissesQuery = 0;
+    int maxChunkMissesReference = 3;
     int smallFrag = 2000; // Cutoff of small fragments (bp)
     double smallFragSlope = C_r_contig/smallFrag;
     bool localAlignment = false;

@@ -145,7 +145,8 @@ void runPermutationTests(MatchResultMap * pMatchResultMap, const vector<OpticalM
     }
 
     AlignmentParams alignParams(opt::C_r_contig, opt::C_r_optical,
-                                opt::sdMax, Constants::SIGMA2, opt::maxChunkMisses,
+                                opt::sdMax, Constants::SIGMA2, opt::maxChunkMissesQuery,
+                                opt::maxChunkMissesReference,
                                 opt::smallFrag, opt::smallFragSlope,
                                 opt::H, opt::T);
 
@@ -245,7 +246,8 @@ void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<Optical
     }
 
     AlignmentParams alignParams(opt::C_r_contig, opt::C_r_optical,
-                                opt::sdMax, Constants::SIGMA2, opt::maxChunkMisses,
+                                opt::sdMax, Constants::SIGMA2, opt::maxChunkMissesQuery,
+                                opt::maxChunkMissesReference,
                                 opt::smallFrag, opt::smallFragSlope,
                                 opt::H, opt::T);
 
@@ -383,7 +385,8 @@ void matchContigToOpticalMaps(const ContigMapData * pContigMap, const vector<Opt
         while (C_sigma <= opt::sdMax)
         {
             AlignmentParams alignParams(opt::C_r_contig, opt::C_r_optical,
-                                        C_sigma, Constants::SIGMA2, opt::maxChunkMisses,
+                                        C_sigma, Constants::SIGMA2, opt::maxChunkMissesQuery,
+                                        opt::maxChunkMissesReference,
                                         opt::smallFrag, opt::smallFragSlope,
                                         opt::H, opt::T);
 
