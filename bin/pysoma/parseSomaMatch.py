@@ -3,8 +3,8 @@
 # Author: Lee Mendelowitz
 # Date: 4/8/2012
 
-# Script for parsing SOMA's .unique_match or .all_match output file
-# Creates 
+# Parse SOMA XML output
+
 ########################################################################
 import numpy as np
 import sys
