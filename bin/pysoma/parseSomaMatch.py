@@ -62,7 +62,6 @@ def parseMatchFileXML(filename):
     print 'File: %s. Read %i matches.'%(filename, matchCount)
     return matchResultList
 
-
 #######################################################################
 # Collect match results by contigId
 def collectMatchResultsByContig(ml):

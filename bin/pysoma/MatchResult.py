@@ -241,3 +241,15 @@ class MatchResult:
     def getChunkScores(self):
         sumChunkScores = lambda mc: mc.score.contig + mc.score.optical + mc.score.sizing
         return [sumChunkScores(mc) for mc in self.alignment if not mc.isContigGap]
+
+    @property
+    def sizingScore(self):
+        return sum(mc.score.sizing for mc in self.alignment)
+
+    @property
+    def opticalMissScore(self):
+        return sum(mc.score.optical for mc in self.alignment)
+
+    @property
+    def contigMissScore(self):
+        return sum(mc.score.contig for mc in self.alignment)

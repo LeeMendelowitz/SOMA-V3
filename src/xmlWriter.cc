@@ -93,7 +93,6 @@ void XMLWriter::writeMatchResult(const MatchResult& mr)
 
 
     // Add the matched chunks
-    /*
     {
     xml_node alignment = matchResultNode.append_child("alignment");
     vector<MatchedChunk>::const_iterator iter = mr.matchedChunkList_.begin();
@@ -103,7 +102,6 @@ void XMLWriter::writeMatchResult(const MatchResult& mr)
         addMatchedChunk(alignment, *iter);
     }
     }
-    */
     
     // Write the node to the file
     matchResultNode.print(*pXmlFile_);

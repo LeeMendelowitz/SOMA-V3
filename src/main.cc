@@ -64,7 +64,7 @@ int main(int argc, char ** argv)
     //Setup output file streams
     XMLWriter xmlWriterAll, xmlWriterSig;
     xmlWriterAll.open((opt::outputPrefix + "_AllMatches.xml").c_str());
-    xmlWriterSig.open((opt::outputPrefix + "_SigMatches.xml").c_str());
+    //xmlWriterSig.open((opt::outputPrefix + "_SigMatches.xml").c_str());
 
     ///////////////////////////////////////////////////////////////////////
     // START align
@@ -123,13 +123,13 @@ int main(int argc, char ** argv)
         pResult = *resultListIter;
         pResult->annotate();
         xmlWriterAll.writeMatchResult(*pResult);
-        if( pResult->pval_ <= opt::pThreshold)
-            xmlWriterSig.writeMatchResult(*pResult);
+        //if( pResult->pval_ <= opt::pThreshold)
+            //xmlWriterSig.writeMatchResult(*pResult);
         delete pResult; pResult = 0;
     }
 
     xmlWriterAll.close();
-    xmlWriterSig.close();
+    //xmlWriterSig.close();
 
     Globals::free(); // Free dynamically created global variables
    
