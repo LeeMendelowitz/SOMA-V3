@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 import xml.etree.cElementTree as ElementTree
 from MatchResult import MatchResult
 import importSomaData
+from FileWrapper import FileWrapper
 
 ########################################################################
 def getBaseName(inFile):
@@ -42,7 +43,19 @@ def parseMatchFileXMLQuality(filename):
     print 'File: %s. Read %i matches, found %i quality matches'%(filename, matchCount, len(matchResultList))
     return matchResultList
 
+def parseMatchFileXML(fin):
+    """
+    Generate MatchResults from a SOMA XML File
+    """
+    fin = FileWrapper(fin, 'r')
+    for event, element in ElementTree.iterparse(fin):
+        if element.tag == 'MatchResult':
+            mr = MatchResult(xmlElement = element)
+            yield mr
+    fin.close()
+
 ########################################################################
+'''
 def parseMatchFileXML(filename):
     matchResultList = []
     matchCount = 0
@@ -50,17 +63,10 @@ def parseMatchFileXML(filename):
     # the xmlElement for the MatchResult once the MatchResult has been
     # instantiated
     matchResultList = [MatchResult(xmlElement=element) for event,element in ElementTree.iterparse(filename) if element.tag == 'MatchResult']
-    '''
-    for event,element in ElementTree.iterparse(filename):
-        if element.tag == 'MatchResult':
-            mr = MatchResult(xmlElement = element, chromosome=chromName)
-            element.clear() # Clear the xml Element
-            matchCount += 1
-            matchResultList.append(mr)
-    '''
     matchCount = len(matchResultList)
     print 'File: %s. Read %i matches.'%(filename, matchCount)
     return matchResultList
+'''
 
 #######################################################################
 # Collect match results by contigId
@@ -161,18 +167,28 @@ def writeInfoFile2(matchList, infoFileName):
               'totalHits',
               'totalMisses',
               'totalMissRate',
-              'score']
+              'score',
+              'sizingScore',
+              'opticalMissScore',
+              'contigMissScore']
 
-    mr = matchList[0]
-    fieldTypes = [type(mr.__dict__[f]) for f in fields]
-    formatters = [formatDict.get(t, str) for t in fieldTypes]
 
     # Write Header
-    fout.write('#' + ','.join(fields) + '\n')
+    fout.write(','.join(fields) + '\n')
     fd = formatDict
-    for mr in matchList:
-        fieldStrs = [formatter(mr.__dict__[f]) for f,formatter in zip(fields, formatters)]
+
+    mr = matchList.next()
+    fieldTypes = [type(getattr(mr,f)) for f in fields]
+    formatters = [formatDict.get(t, str) for t in fieldTypes]
+
+    def write(mr):
+        fieldStrs = (formatter(getattr(mr, f)) for f,formatter in zip(fields, formatters))
         fout.write(','.join(fieldStrs) + '\n')
+
+    write(mr)
+    for mr in matchList:
+        write(mr)
+
     fout.close()
 
 

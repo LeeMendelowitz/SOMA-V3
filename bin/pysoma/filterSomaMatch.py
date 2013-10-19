@@ -52,7 +52,7 @@ def genMatchResultElements(fin):
 
 def mergeXMLFiles(finList, fout):
     fout = FileWrapper(fout, 'w')
-    fout.write('<?xml version="1.0?>\n')
+    fout.write('<?xml version="1.0" ?>\n')
     fout.write('<alignments>\n')
     for fin in finList:
         fin = FileWrapper(fin, 'r')
