@@ -56,7 +56,7 @@ srcs=match.cc\
      MatchedChunk.cc \
 	 MapReader.cc \
      xmlWriter.cc \
-     FragDatabase.cc \
+     ChunkDatabase.cc \
      seedTypes.cc
 
 _DEPS= AlignmentParams.h\
@@ -65,7 +65,7 @@ _DEPS= AlignmentParams.h\
 	debugUtils.h\
 	dp.h\
 	exception.h\
-	FragDatabase.h\
+	ChunkDatabase.h\
 	GlobalScorer.h\
 	globals.h\
 	itoa.h\

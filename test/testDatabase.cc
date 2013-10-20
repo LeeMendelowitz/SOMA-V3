@@ -3,7 +3,7 @@
 
 #include "ContigMapData.h"
 #include "OpticalMapData.h"
-#include "FragDatabase.h"
+#include "ChunkDatabase.h"
 
 int main()
 {
@@ -19,9 +19,11 @@ int main()
     cout << "Read " << opticalMaps.size() << " optical maps.\n";
 
     // Build fragment database
-    FragDatabase fragDB;
-    fragDB.addMap(opticalMaps.front());
-    fragDB.sortFrags();
+    ChunkDatabase chunkDB;
+    cout << "Adding map..." << endl;
+    chunkDB.addMap(opticalMaps.front(), 0);
+    cout << "sorting..." << endl;
+    chunkDB.sortFrags();
 
     cout << "Done sorting optical map fragments in database.\n";
 
@@ -32,8 +34,17 @@ int main()
     bounds.push_back(IntPair(30000,50000));
     bounds.push_back(IntPair(30000,50000));
 
-    vector<FragPtr*> hits;
-    fragDB.getFragPtrHits(bounds, hits);
+    vector<MapChunk*> hits;
+    chunkDB.getMapChunkHits(bounds, hits);
+
+    cout << "Found " << hits.size() << " hits.\n";
+    for(size_t i = 0; i < hits.size(); i++)
+    {
+        cout << *(hits[i]) << "\n";
+    }
+
+    bounds.resize(1);
+    chunkDB.getMapChunkHits(bounds, hits);
 
     cout << "Found " << hits.size() << " hits.\n";
     for(size_t i = 0; i < hits.size(); i++)

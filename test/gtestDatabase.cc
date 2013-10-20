@@ -1,11 +1,14 @@
-// Test the FragDatabase
+// Test the ChunkDatabase
 #include "gtest/gtest.h"
 
 #include <iostream>
+using std::cout;
+#include <vector>
+using std::vector;
 
 #include "ContigMapData.h"
 #include "OpticalMapData.h"
-#include "FragDatabase.h"
+#include "ChunkDatabase.h"
 
 // To use a test fixture, derive a class from testing::Test.
 class DatabaseTest : public testing::Test {
@@ -21,8 +24,8 @@ class DatabaseTest : public testing::Test {
     readContigMaps("contigs.silico", contigMaps_);
     std::cout << "Read " << contigMaps_.size() << " contig maps.\n";
     std::cout << "Read " << opticalMaps_.size() << " optical maps.\n";
-    fragDB_.addMap(opticalMaps_.front());
-    fragDB_.sortFrags();
+    chunkDB_.addMap(opticalMaps_.front(), 5);
+    chunkDB_.sortFrags();
   }
 
   // virtual void TearDown() will be called after each test is run.
@@ -45,12 +48,15 @@ class DatabaseTest : public testing::Test {
   // Declares the variables your tests want to use.
   vector<ContigMapData*> contigMaps_;
   vector<OpticalMapData*> opticalMaps_;
-  FragDatabase fragDB_;
+  ChunkDatabase chunkDB_;
 };
 
 
-bool hitWithinBounds(const IntPairVec& bounds, FragPtr * hit)
+bool hitWithinBounds(const IntPairVec& bounds, MapChunk * hit)
 {
+    // NEEDS TO BE REWORKED
+
+    /*
     FragDataVec::const_iterator d = hit->pFrag_;
     size_t i = 0;
     bool isMatch = true;
@@ -62,25 +68,31 @@ bool hitWithinBounds(const IntPairVec& bounds, FragPtr * hit)
         if (!isMatch) break;
     }
     return isMatch;
+    */
+    return true;
 }
 
-bool indexIsCorrect(FragPtrVec::const_iterator B, FragPtrVec::const_iterator E, int ind, int q)
+bool hitWithinBounds(int lowerBound, int upperBound, MapChunk * hit)
 {
+    return (hit->size_ <= upperBound) && (hit->size_ >= lowerBound);
+}
 
+bool indexIsCorrect(MapChunkVec::const_iterator B, MapChunkVec::const_iterator E, int ind, int q)
+{
     bool isOK = true;
-    FragPtrVec::const_iterator iter = B + ind;
+    MapChunkVec::const_iterator iter = B + ind;
 
     // Check that this is the first element greater than q
     if (iter < E)
     {
-        FragPtr * p = *iter;
-        isOK = isOK &&  (p->pFrag_->size_ > q);
+        MapChunk * p = *iter;
+        isOK = isOK &&  (p->size_ > q);
     }
 
     if (iter - 1 >= B)
     {
-        FragPtr * p = *(iter-1);
-        isOK = isOK && (p->pFrag_->size_ < q);
+        MapChunk * p = *(iter-1);
+        isOK = isOK && (p->size_ < q);
     }
     return isOK;
 }
@@ -91,46 +103,49 @@ bool indexIsCorrect(FragPtrVec::const_iterator B, FragPtrVec::const_iterator E, 
 
 // Tests the default c'tor.
 TEST_F(DatabaseTest, ConstructerSortTest) {
-    FragPtrVec::const_iterator i = fragDB_.fragsB();
-    int lastSize = (*i)->pFrag_->size_;
+    MapChunkVec::const_iterator i = chunkDB_.chunksB();
+    int lastSize = (*i)->size_;
     int lastRank = (*i)->rank_;
     ASSERT_EQ(0, lastRank);
     i++;
-    for(; i != fragDB_.fragsE(); i++)
+    for(; i != chunkDB_.chunksE(); i++)
     {
-       FragPtr * pFrag = *i;
-       ASSERT_GE(pFrag->pFrag_->size_, lastSize);
+       MapChunk * pFrag = *i;
+       ASSERT_GE(pFrag->size_, lastSize);
        ASSERT_EQ(lastRank + 1, pFrag->rank_);
-       lastSize = pFrag->pFrag_->size_;
+       lastSize = pFrag->size_;
        lastRank++;
     }
 }
 
-TEST_F(DatabaseTest, FragPtrPrevNextTest) {
-    FragPtrVec::const_iterator i = fragDB_.fragsB();
-    for(; i != fragDB_.fragsE(); i++)
+template <class T>
+bool testMembership(const vector<T>& vec, T test)
+{
+    for(typename vector<T>::const_iterator iter = vec.begin();
+        iter != vec.end();
+        iter++)
+        if (*iter == test)
+        {
+            return true;
+        }
+    return false;
+}
+
+TEST_F(DatabaseTest, MapChunkPrevNextTest) {
+
+    MapChunkVec::const_iterator i = chunkDB_.chunksB();
+    for(; i != chunkDB_.chunksE(); i++)
     {
-       FragPtr * pFrag = *i;
+       MapChunk * thisChunk = *i;
 
        // Test that the next pointer is correct
-       FragDataVec::const_iterator next = pFrag->pFrag_ + 1;
-       FragDataVec::const_iterator prev = pFrag->pFrag_ - 1;
-       if (next < pFrag->map_->getFragsE())
+       for(MapChunkVec::const_iterator iter = thisChunk->next_.begin();
+           iter != thisChunk->next_.end();
+           iter++)
        {
-           ASSERT_EQ(next, pFrag->pNext_->pFrag_);
-       }
-       else
-       {
-           ASSERT_EQ(NULL, pFrag->pNext_);
-       }
-
-       if (prev >= pFrag->map_->getFragsB())
-       {
-            ASSERT_EQ(prev, pFrag->pPrev_->pFrag_);
-       }
-       else
-       {
-           ASSERT_EQ(NULL, pFrag->pPrev_);
+           MapChunk * nextChunk = *iter;
+           ASSERT_EQ(nextChunk->bFrag_, thisChunk->eFrag_);
+           ASSERT_TRUE(testMembership(nextChunk->prev_, thisChunk));
        }
     }
 }
@@ -148,26 +163,47 @@ TEST_F(DatabaseTest, LowerBoundTest)
     for (size_t i = 0; i < ints.size(); i++)
     {
         int q = ints[i];
-        int ind = fragDB_.lowerBound(q);
-        bool isOK = indexIsCorrect(fragDB_.fragsB(), fragDB_.fragsE(), ind, q);
+        int ind = chunkDB_.lowerBoundIndex(q);
+        bool isOK = indexIsCorrect(chunkDB_.chunksB(), chunkDB_.chunksE(), ind, q);
         ASSERT_TRUE(isOK);
     }
 
 }
 
-TEST_F(DatabaseTest, QueryTest)
+TEST_F(DatabaseTest, QueryTest1)
 {
     // Make a query
     IntPairVec bounds;
-    // 40041   33760   49438
     bounds.push_back(IntPair(30000,50000));
     bounds.push_back(IntPair(30000,50000));
     bounds.push_back(IntPair(30000,50000));
 
-    vector<FragPtr*> hits;
-    fragDB_.getFragPtrHits(bounds, hits);
+    vector<MapChunk*> hits;
+    chunkDB_.getMapChunkHits(bounds, hits);
 
     cout << "Found " << hits.size() << " hits.\n";
+    for(size_t i = 0; i < hits.size(); i++)
+    {
+        cout << *(hits[i]) << endl;
+    }
+
+    for(size_t i=0; i < hits.size(); i++)
+    {
+        ASSERT_TRUE(hitWithinBounds(bounds, hits[i]));
+    }
+
+    cout << "Done with test." << endl;
+}
+
+TEST_F(DatabaseTest, BlahTest2)
+{
+    // Make a query
+    vector<MapChunk*> hits;
+    int lb = 30000;
+    int ub = 50000;
+    chunkDB_.getMapChunkHits(lb, ub, hits);
+
+    cout << "Found " << hits.size() << " hits." << endl;
     for(size_t i = 0; i < hits.size(); i++)
     {
         cout << *(hits[i]) << "\n";
@@ -175,6 +211,6 @@ TEST_F(DatabaseTest, QueryTest)
 
     for(size_t i=0; i < hits.size(); i++)
     {
-        ASSERT_TRUE(hitWithinBounds(bounds, hits[i]));
+        ASSERT_TRUE(hitWithinBounds(lb, ub, hits[i]));
     }
 }

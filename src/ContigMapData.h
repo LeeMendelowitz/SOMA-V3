@@ -21,10 +21,9 @@ class ContigMapData : public MapData
     ContigMapData(int length, const string& contigId, bool isForward);
 
     void setFrags(const vector<FragData>& frags);
-    const vector<FragData>& getFrags() const
-    {
-        return frags_;
-    }
+    const vector<FragData>& getFrags() const { return frags_; }
+    FragDataVec::const_iterator getFragsB() const { return frags_.begin(); }
+    FragDataVec::const_iterator getFragsE() const { return frags_.end(); }
 
 
     // Get the starting location of a restriction fragment

@@ -59,8 +59,6 @@ class OpticalMapData : public MapData
 
     int getLength() const { return length_; }
 
-    FragDataVec::const_iterator getFragB() const { return frags_.begin(); }
-    FragDataVec::const_iterator getFragE() const { return frags_.end(); }
     FragDataVec::const_iterator getFragsB() const { return frags_.begin(); }
     FragDataVec::const_iterator getFragsE() const { return frags_.end(); }
 

@@ -1,26 +1,40 @@
 #include "seedTypes.h"
 
-FragPtr::FragPtr(const OpticalMapData * map, const vector<FragData>::const_iterator pFrag) :
-    pFrag_(pFrag),
+using namespace std;
+
+int sum(const FragDataConstIter bFrag, const FragDataConstIter eFrag)
+{
+    int s = 0;
+    for(FragDataConstIter iter = bFrag; iter != eFrag; iter++)
+        s += iter->size_;
+    return s;
+}
+
+MapChunk::MapChunk(const MapData * map, const FragDataConstIter bFrag,
+                                const FragDataConstIter eFrag) :
     map_(map),
-    pNext_(0),
-    pPrev_(0),
-    rank_(-1)
+    bFrag_(bFrag),
+    eFrag_(eFrag),
+    rank_(-1),
+    size_(sum(bFrag, eFrag))
 {};
 
 
-FragPtr::FragPtr(const FragPtr& other) :
-    pFrag_(other.pFrag_),
+MapChunk::MapChunk(const MapChunk& other) :
     map_(other.map_),
-    pNext_(other.pNext_),
-    pPrev_(other.pPrev_),
-    rank_(other.rank_)
+    bFrag_(other.bFrag_),
+    eFrag_(other.eFrag_),
+    next_(other.next_),
+    prev_(other.prev_),
+    rank_(other.rank_),
+    size_(other.size_)
 {};
 
-std::ostream& operator<<(std::ostream& o, const FragPtr& p)
+std::ostream& operator<<(std::ostream& o, const MapChunk& p)
 {
     o << " Map: " << p.map_->getId()
-      << " index: " << p.getIndex()
-      << " size (bp): " << p.pFrag_->size_;
+      << " bInd: " << p.getStartIndex()
+      << " eInd: " << p.getEndIndex()
+      << " size (bp): " << p.size_;
     return o;
 }

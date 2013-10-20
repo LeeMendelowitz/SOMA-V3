@@ -25,6 +25,10 @@ class MapData
 
     // Return a constant reference to the map fragments
     virtual const FragDataVec& getFrags() const = 0;
+    virtual FragDataVec::const_iterator getFragsB() const = 0;
+    virtual FragDataVec::const_iterator getFragsE() const = 0;
+
+    size_t numFrags() const { return getFrags().size(); }
 
     private:
     std::string id_;
