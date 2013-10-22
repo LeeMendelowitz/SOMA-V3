@@ -3,8 +3,8 @@
 
 #include <vector>
 #include <ostream>
+#include <utility>
 #include "mapTypes.h"
-#include "OpticalMapData.h"
 
 // Class to represent a chunk from
 // a query map or reference map.
@@ -12,8 +12,12 @@
 class MapChunk;
 typedef std::vector<FragData>::const_iterator FragDataConstIter;
 typedef std::vector<MapChunk*> MapChunkVec;
+typedef std::vector< MapChunkVec > MapChunkIndex;
 typedef std::vector<MapChunk*>::iterator MapChunkVecIter;
 typedef std::vector<MapChunk*>::const_iterator MapChunkVecConstIter;
+typedef std::pair<MapChunkVecConstIter, MapChunkVecConstIter> MapChunkVecBounds;
+
+class MapData;
 
 class MapChunk
 {
@@ -35,8 +39,13 @@ class MapChunk
         return this->size_ < fragSize;
     }
 
-    size_t getStartIndex() const { return bFrag_ - map_->getFragsB(); }
-    size_t getEndIndex() const { return eFrag_ - map_->getFragsB(); }
+    bool operator<=(int fragSize) const {
+        return this->size_ <= fragSize;
+    }
+
+    /*inline*/ size_t getStartIndex() const;
+    /*inline*/ size_t getEndIndex() const;
+    int getNumFrags() const { return eFrag_ - bFrag_; }
 
     // members
     const MapData * map_; // pointer to the map which owns the fragment

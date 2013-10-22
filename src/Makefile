@@ -1,4 +1,4 @@
-CXXFLAGS=-Wall -fopenmp
+CXXFLAGS=-Wall -fopenmp -pedantic -std=c++0x                  
 IDIR=
 
 GTEST_INC = /home/lee/packages/gtest-1.7.0/include
@@ -43,6 +43,7 @@ gtestDummy: ../test/bin/gtestDummy
 srcs=match.cc\
      globals.cc \
      dp.cc \
+	 seededDp.cc \
      Scorer.cc \
 	 utils.cc \
 	 debugUtils.cc \
@@ -55,15 +56,18 @@ srcs=match.cc\
 	 scoringFunctions.cc \
      MatchedChunk.cc \
 	 MapReader.cc \
+	 MapData.cc \
      xmlWriter.cc \
      ChunkDatabase.cc \
-     seedTypes.cc
+     MapChunk.cc \
+	 MapChunkUtils.cc
 
 _DEPS= AlignmentParams.h\
 	array2d.h\
 	ContigMapData.h\
 	debugUtils.h\
 	dp.h\
+	seededDp.h\
 	exception.h\
 	ChunkDatabase.h\
 	GlobalScorer.h\
@@ -87,7 +91,8 @@ _DEPS= AlignmentParams.h\
 	ScoreMatrix.h\
 	Scorer.h\
 	scoringFunctions.h\
-	seedTypes.h\
+	MapChunk.h\
+	MapChunkUtils.h\
 	SeqCoord.h\
 	StandardMatchMaker.h\
 	types.h\
@@ -100,6 +105,8 @@ OBJS_DEBUG = $(patsubst %.cc,$(OBJDIR_DEBUG)/%.o,$(srcs))
 OBJS_RELEASE = $(patsubst %.cc,$(OBJDIR_RELEASE)/%.o,$(srcs))
 OBJS_GPROF = $(patsubst %.cc,$(OBJDIR_GPROF)/%.o,$(srcs))
 
+
+%.o : %.cc $(DEPS)
 
 $(OBJS_DEBUG) : $(OBJDIR_DEBUG)/%.o: %.cc | $(OBJDIR_DEBUG)
 	@echo making debug object $@

@@ -3,8 +3,11 @@
 #define MAPDATA_H
 
 #include <vector>
+#include <utility>
+#include <iostream>
 #include "mapTypes.h"
-
+#include "MapChunk.h"
+#include "MapChunkUtils.h"
 
 typedef std::vector<FragData> FragDataVec;
 
@@ -13,7 +16,7 @@ class MapData
     public:
     MapData() {};
     MapData(const std::string& id) : id_(id) {};
-    virtual ~MapData() {};
+    virtual ~MapData() { freeChunks(); };
 
     std::string getId() const { return id_; }
 
@@ -30,9 +33,27 @@ class MapData
 
     size_t numFrags() const { return getFrags().size(); }
 
+    // Note: Chunk storage within MapData could be implemented better/safer
+    void setChunks(MapChunkVec& chunks, MapChunkIndex& startToChunks, MapChunkIndex& endToChunks )
+    {
+        chunks_ = move(chunks);
+        startToChunks_ = move(startToChunks);
+        endToChunks_ = move(endToChunks);
+    }
+
+    void freeChunks() { for(auto c: chunks_) delete c; }
+    const MapChunkVec& getChunksByStartIndex(int index) { return startToChunks_[index]; }
+    const MapChunkVec& getChunksByEndIndex(int index) { return endToChunks_[index]; }
+    const MapChunkVec& getChunks() { return chunks_; }
+
     private:
+    void indexChunks();
     std::string id_;
+    MapChunkVec chunks_;
+    MapChunkIndex startToChunks_;
+    MapChunkIndex endToChunks_;
 };
+
 
 
 #endif

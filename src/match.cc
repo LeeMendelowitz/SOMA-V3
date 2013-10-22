@@ -163,7 +163,7 @@ void runPermutationTests(MatchResultMap * pMatchResultMap, const vector<OpticalM
             cout << "Processed permutation test " << numProcessed << " of " << numPermutationTests << "\n";
         vector<double> permutedScores = vector<double>(numTrials, -Constants::INF);
 
-        #pragma omp parallel for schedule(dynamic) private(i)
+        #pragma omp parallel for schedule(dynamic)
         for (int i=0; i<numTrials; i++)
         {
             const OpticalMapData * pPermutedOpticalMap = permutedOpticalMaps[i];
@@ -285,7 +285,7 @@ void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<Optical
             permutedContigs[j].setFrags(frags);
         }
 
-        #pragma omp parallel for schedule(dynamic) private(j)
+        #pragma omp parallel for schedule(dynamic)
         for (int j=0; j < numTrials; j++)
         {
             // Match permuted contig to all optical maps

@@ -9,6 +9,8 @@ using std::vector;
 #include "ContigMapData.h"
 #include "OpticalMapData.h"
 #include "ChunkDatabase.h"
+#include "MapChunkUtils.h"
+#include "seededDp.h"
 
 // To use a test fixture, derive a class from testing::Test.
 class DatabaseTest : public testing::Test {
@@ -24,7 +26,9 @@ class DatabaseTest : public testing::Test {
     readContigMaps("contigs.silico", contigMaps_);
     std::cout << "Read " << contigMaps_.size() << " contig maps.\n";
     std::cout << "Read " << opticalMaps_.size() << " optical maps.\n";
-    chunkDB_.addMap(opticalMaps_.front(), 5);
+    size_t maxInteriorMisses = 3;
+    setMapChunks(opticalMaps_.front(), maxInteriorMisses);
+    chunkDB_.addChunks(opticalMaps_.front()->getChunks());
     chunkDB_.sortFrags();
   }
 
@@ -182,10 +186,12 @@ TEST_F(DatabaseTest, QueryTest1)
     chunkDB_.getMapChunkHits(bounds, hits);
 
     cout << "Found " << hits.size() << " hits.\n";
+    /*
     for(size_t i = 0; i < hits.size(); i++)
     {
         cout << *(hits[i]) << endl;
     }
+    */
 
     for(size_t i=0; i < hits.size(); i++)
     {
@@ -195,22 +201,48 @@ TEST_F(DatabaseTest, QueryTest1)
     cout << "Done with test." << endl;
 }
 
-TEST_F(DatabaseTest, BlahTest2)
+TEST_F(DatabaseTest, QueryTest2)
 {
     // Make a query
     vector<MapChunk*> hits;
-    int lb = 30000;
-    int ub = 50000;
+    const int lb = 30000;
+    const int ub = 50000;
     chunkDB_.getMapChunkHits(lb, ub, hits);
 
     cout << "Found " << hits.size() << " hits." << endl;
+    /*
     for(size_t i = 0; i < hits.size(); i++)
     {
         cout << *(hits[i]) << "\n";
-    }
+    }*/
 
     for(size_t i=0; i < hits.size(); i++)
     {
         ASSERT_TRUE(hitWithinBounds(lb, ub, hits[i]));
+    }
+}
+
+TEST_F(DatabaseTest, CountCellsInPlay)
+{
+    float tol = 0.10;
+    int minDelta = 1000;
+    size_t maxInteriorMisses = 1;
+
+    // Populate chunks for each query
+    vector<MapChunkVec> mapChunks(contigMaps_.size());
+    for (size_t i = 0; i < contigMaps_.size(); i++)
+    {
+        ContigMapData * cMap = contigMaps_[i];
+        setMapChunks(cMap, maxInteriorMisses);
+        RefToCoordSet refToCoordSet;
+        calculateCellsInPlay(cMap->getChunks(), chunkDB_, tol, minDelta, refToCoordSet);
+        ASSERT_TRUE(refToCoordSet.size() == 1);
+
+        size_t numCells = 0;
+        for(RefToCoordSet::const_iterator iter = refToCoordSet.begin(); iter != refToCoordSet.end(); iter++)
+        {
+            numCells += iter->second.size();
+        }
+        cout << "Got " << numCells << "cells.\n";
     }
 }

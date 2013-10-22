@@ -6,6 +6,7 @@ using std::upper_bound;
 #include <iostream>
 
 #include "ChunkDatabase.h"
+#include "MapChunkUtils.h"
 
 void incrementMapChunks(MapChunkVec& v);
 void decrementMapChunks(MapChunkVec& v);
@@ -17,54 +18,6 @@ void filterMapChunksBySize(MapChunkVec&v, int lowerSize, int upperSize);
 Add fragments from the specified OpticalMapData to the 
 database.
 */
-void ChunkDatabase::addMap(const MapData * pMap, size_t maxInteriorMisses)
-{
-
-    // Create MapChunk's and put them in the chunks_ vector.
-
-    typedef vector<MapChunkVec> OffsetVec;
-    OffsetVec offset2Chunks(pMap->numFrags());
-
-    MapChunkVec newChunks;
-    newChunks.reserve(pMap->numFrags()*(maxInteriorMisses+1));
-
-    const FragDataVec::const_iterator fragE = pMap->getFragsE();
-    for (FragDataVec::const_iterator iter = pMap->getFragsB();
-         iter != fragE;
-         iter++)
-    {
-        for (size_t i = 0; i <= maxInteriorMisses; i++)
-        {
-            if (iter + i + 1 > fragE) break;
-            MapChunk * f = new MapChunk(pMap, iter, iter + i + 1);
-            assert(f->getStartIndex() < offset2Chunks.size());
-            offset2Chunks[f->getStartIndex()].push_back(f);
-            newChunks.push_back(f);
-        }
-    }
-
-    // Set the neighbors 
-    for(MapChunkVec::const_iterator citer = newChunks.begin();
-        citer != newChunks.end();
-        citer++)
-    {
-        MapChunk * pChunk = *citer;
-        size_t offset = pChunk->getEndIndex();
-        if (offset < offset2Chunks.size())
-        {
-            const MapChunkVec& successors = offset2Chunks[offset];
-            for(MapChunkVec::const_iterator siter = successors.begin();
-                siter != successors.end();
-                siter++)
-            {
-                MapChunk * nextChunk = *siter;
-                pChunk->next_.push_back(nextChunk);
-                nextChunk->prev_.push_back(pChunk);
-            }
-        }
-        chunks_.push_back(pChunk);
-    }
-}
 
 ChunkDatabase::~ChunkDatabase()
 {
@@ -74,7 +27,7 @@ ChunkDatabase::~ChunkDatabase()
          iter != chunks_.end();
          iter++)
     {
-        delete *iter;
+//        delete *iter;
     }
 
     chunks_.clear();
@@ -88,7 +41,11 @@ inline bool MapChunkCmp(const MapChunk * p1, const MapChunk* p2)
 
 inline bool MapChunkIntCmp(const MapChunk * p, int q)
 {
-    return (*p < q);
+    return p->size_ < q;
+}
+inline bool IntMapChunkCmp(int q, const MapChunk * p)
+{
+    return q < p->size_;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -115,9 +72,40 @@ void ChunkDatabase::sortFrags()
 
 inline int ChunkDatabase::lowerBoundIndex(int q)
 {
-    MapChunkVec::const_iterator iter = lower_bound(chunks_.begin(), chunks_.end(), q, MapChunkIntCmp);
+    MapChunkVecConstIter iter = lower_bound(chunks_.begin(), chunks_.end(), q, MapChunkIntCmp);
     int index = iter - chunks_.begin();
     return index;
+}
+
+inline MapChunkVecConstIter ChunkDatabase::lowerBoundIter(int q)
+{
+    return lower_bound(chunks_.begin(), chunks_.end(), q, MapChunkIntCmp);
+}
+
+inline int ChunkDatabase::upperBoundIndex(int q)
+{
+    MapChunkVecConstIter iter = upper_bound(chunks_.begin(), chunks_.end(), q, IntMapChunkCmp);
+    int index = iter - chunks_.begin();
+    return index;
+}
+
+inline int ChunkDatabase::upperBoundIndex(int q, int lowerIndex)
+{
+    MapChunkVecConstIter iter = upper_bound(chunks_.begin() + lowerIndex, chunks_.end(), q, IntMapChunkCmp);
+    int index = iter - chunks_.begin();
+    return index;
+}
+
+inline MapChunkVecConstIter ChunkDatabase::upperBoundIter(int q)
+{
+    return upper_bound(chunks_.begin(), chunks_.end(), q, IntMapChunkCmp);
+}
+
+inline MapChunkVecConstIter ChunkDatabase::upperBoundIter(int q, MapChunkVecConstIter lower)
+{
+    MapChunkVecConstIter chunksE = chunks_.end();
+    //return upper_bound(chunks_.begin(), chunks_.end(), q, MapChunkIntCmp);
+    return upper_bound(lower, chunksE, q, IntMapChunkCmp);
 }
 
 // Increment all MapChunks in the vector
@@ -217,9 +205,9 @@ bool ChunkDatabase::getMapChunkHits(IntPairVec& query, MapChunkVec& hits)
     int ub = qi->second; // upper bound of query
     assert(lb <= ub);
     int lbi = lowerBoundIndex(lb);
-    int ubi = lowerBoundIndex(ub);
+    int ubi = upperBoundIndex(ub, lbi);
     assert(lbi <= ubi);
-    hits.reserve(ubi - lbi + 1);
+    hits.reserve(ubi - lbi);
     for(int i = lbi; i < ubi; i++)
         hits.push_back(chunks_[i]);
 
@@ -257,10 +245,17 @@ bool ChunkDatabase::getMapChunkHits(int lowerBound, int upperBound, MapChunkVec&
     // Populate the hits vector using the first set of bounds.
     assert(lowerBound <= upperBound);
     int lbi = lowerBoundIndex(lowerBound);
-    int ubi = lowerBoundIndex(upperBound);
+    int ubi = upperBoundIndex(upperBound, lbi);
     assert(lbi <= ubi);
-    hits.reserve(ubi - lbi + 1);
+    hits.reserve(ubi - lbi);
     for(int i = lbi; i < ubi; i++)
         hits.push_back(chunks_[i]);
     return !hits.empty();
+}
+
+MapChunkVecConstIterPair ChunkDatabase::getMapChunkHitCoords(int lowerBound, int upperBound)
+{
+    MapChunkVecConstIter lower = lowerBoundIter(lowerBound);
+    MapChunkVecConstIter upper = upperBoundIter(upperBound);
+    return MapChunkVecConstIterPair(lower, upper);
 }

@@ -4,6 +4,7 @@
 #include "ContigMapData.h"
 #include "OpticalMapData.h"
 #include "ChunkDatabase.h"
+#include "MapChunkUtils.h"
 
 int main()
 {
@@ -16,12 +17,20 @@ int main()
     readOpticalMaps("map100.opt", opticalMaps);
     readContigMaps("contigs.silico", contigMaps);
     cout << "Read " << contigMaps.size() << " contig maps.\n";
-    cout << "Read " << opticalMaps.size() << " optical maps.\n";
+    cout << "Read " << opticalMaps.size() << " optical maps.\n" << flush;
 
     // Build fragment database
+    const size_t missedInteriorSites = 2;
+    for (auto omap : opticalMaps)
+    {
+        cout << "setting map chunks for map " << omap->getId() << endl;
+        setMapChunks(omap, missedInteriorSites);
+    }
+    cout << "done setting maps!" << endl;
     ChunkDatabase chunkDB;
+
     cout << "Adding map..." << endl;
-    chunkDB.addMap(opticalMaps.front(), 0);
+    chunkDB.addChunks(opticalMaps.front()->getChunks());
     cout << "sorting..." << endl;
     chunkDB.sortFrags();
 
