@@ -1,6 +1,8 @@
 #include <iostream>
 
 #include "seededDp.h"
+#include "ScoreCell.h"
+
 using namespace std;
 
 // Return the cells in the dynamic programming table which are in play
@@ -25,7 +27,7 @@ void calculateCellsInPlay(const MapChunkVec& queryChunks, ChunkDatabase& chunkDB
     }
 
     // Collect the subpaths which are in play by reference map. 
-    RefToScorePaths refToScorePaths;
+    RefToScorePathSteps refToScorePathSteps;
     for(size_t i = 0; i < matches.size(); i++) {
         MapChunk * const queryChunk = queryChunks[i];
         const MapChunkVecConstIterPair& iterPair = matches[i];
@@ -33,13 +35,13 @@ void calculateCellsInPlay(const MapChunkVec& queryChunks, ChunkDatabase& chunkDB
         const MapChunkVecConstIter last = iterPair.second;
         for(MapChunkVecConstIter iter = first; iter != last; iter++) {
             const MapChunk * refChunk = *iter;
-            ScorePath sp(queryChunk, refChunk);
-            RefToScorePathsIter spIter  = refToScorePaths.find(sp.getRefMap());
-            if (spIter != refToScorePaths.end()) {
+            ScorePathStep sp(queryChunk, refChunk);
+            RefToScorePathStepsIter spIter  = refToScorePathSteps.find(sp.getRefMap());
+            if (spIter != refToScorePathSteps.end()) {
                 spIter->second.push_back(sp);
             } else {
-                ScorePathVec spVec(1, sp);
-                refToScorePaths.insert(RefToScorePaths::value_type(sp.getRefMap(), spVec));
+                ScorePathStepVec spVec(1, sp);
+                refToScorePathSteps.insert(RefToScorePathSteps::value_type(sp.getRefMap(), spVec));
             }
         }
     }
@@ -47,8 +49,8 @@ void calculateCellsInPlay(const MapChunkVec& queryChunks, ChunkDatabase& chunkDB
     refToCoordSet.clear();
 
     // Collect the cells that are in play
-    for(RefToScorePaths::const_iterator iter = refToScorePaths.begin();
-        iter != refToScorePaths.end(); iter++)
+    for(RefToScorePathSteps::const_iterator iter = refToScorePathSteps.begin();
+        iter != refToScorePathSteps.end(); iter++)
     {
         CoordSet coordSet;
         getCells(iter->second, coordSet);
@@ -56,7 +58,7 @@ void calculateCellsInPlay(const MapChunkVec& queryChunks, ChunkDatabase& chunkDB
     }
 }
 
-
+/*
 class ScoreTableTracker
 {
     public:
@@ -68,7 +70,7 @@ class ScoreTableTracker
         maxInteriorMissedSites_(maxInteriorMissedSites)
     { };
 
-    void processScorePaths(ScorePathVec& scorePaths);
+    void processScorePathSteps(ScorePathStepVec& scorePaths);
 
     // Get or create a score cell.
     ScoreCell * getScoreCell(const IntPair& coord)
@@ -94,7 +96,7 @@ class ScoreTableTracker
 
 // Process score paths for a single query & single reference
 // to identify cells that are in play.
-void ScoreTableTracker::processScorePaths(ScorePathVec& scorePaths)
+void ScoreTableTracker::processScorePathSteps(ScorePathStepVec& scorePaths)
 {
     for (auto sp : scorePaths)
     {
@@ -105,13 +107,14 @@ void ScoreTableTracker::processScorePaths(ScorePathVec& scorePaths)
     }
     
 }
+*/
 
-// Extract cells that are in play for a vector of ScorePaths.
-void getCells(const ScorePathVec& vec, CoordSet& coordSet)
+// Extract cells that are in play for a vector of ScorePathSteps.
+void getCells(const ScorePathStepVec& vec, CoordSet& coordSet)
 {
     for(size_t i = 0; i < vec.size(); i++)
     {
-        const ScorePath& sp = vec[i];
+        const ScorePathStep& sp = vec[i];
         coordSet.insert(sp.endCoord());
     }
 }

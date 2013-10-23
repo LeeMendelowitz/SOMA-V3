@@ -8,6 +8,8 @@
 
 using namespace std;
 
+// Given a MapData, compute the chunks, and store them in the
+// MapData.
 void setMapChunks(MapData * pMap, size_t maxInteriorMisses)
 {
 

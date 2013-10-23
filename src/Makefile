@@ -89,6 +89,9 @@ _DEPS= AlignmentParams.h\
 	parseArgs.h\
 	permutation.h\
 	ScoreMatrix.h\
+	ScoreMatrixSeeded.h\
+	ScoreCell.h\
+	ScorePathStep.h\
 	Scorer.h\
 	scoringFunctions.h\
 	MapChunk.h\
