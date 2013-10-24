@@ -192,6 +192,33 @@ def writeInfoFile2(matchList, infoFileName):
     fout.close()
 
 
+def mergeInfoFiles(fileList, fout):
+    fout = FileWrapper(fout, 'w')
+
+    def genBody(f, skip = 1):
+        for i in xrange(skip):
+            f.next()
+        for l in f:
+            yield l
+
+    file_iter = iter(fileList)
+
+    # Handle first file. Write all of its output to fout.
+    for f in file_iter:
+        f = FileWrapper(f, 'r')
+        for l in f:
+            fout.write(l)
+        f.close()
+        break
+
+    # Handle subsequent files. Skip the header line
+    for f in file_iter:
+        f = FileWrapper(f, 'r')
+        for l in genBody(f):
+            fout.write(l)
+        f.close()
+
+    fout.close()
 
 ########################################################################
 # open a .all_match file, create a matchList of only quality matches,

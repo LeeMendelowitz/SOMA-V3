@@ -10,6 +10,7 @@ using std::vector;
 #include "OpticalMapData.h"
 #include "ChunkDatabase.h"
 #include "MapChunkUtils.h"
+#include "ScoreMatrixSeeded.h"
 #include "seededDp.h"
 
 // To use a test fixture, derive a class from testing::Test.
@@ -244,5 +245,37 @@ TEST_F(DatabaseTest, CountCellsInPlay)
             numCells += iter->second.size();
         }
         cout << "Got " << numCells << "cells.\n";
+    }
+}
+
+TEST_F(DatabaseTest, GetScorePaths)
+{
+    float tol = 0.10;
+    int minDelta = 1000;
+    size_t maxInteriorMisses = 1;
+
+    using seeded::ScoreMatrix;
+
+    // Populate chunks for each query
+    vector<MapChunkVec> mapChunks(contigMaps_.size());
+    for (size_t i = 0; i < contigMaps_.size(); i++)
+    {
+        ContigMapData * cMap = contigMaps_[i];
+        setMapChunks(cMap, maxInteriorMisses);
+
+        RefToScorePathSteps refToScorePaths;  
+        getScorePaths(cMap->getChunks(), chunkDB_, tol, minDelta, refToScorePaths);
+        seeded::ScoreMatrix scoreMatrix(0,0);
+
+        ASSERT_TRUE(refToScorePaths.size() == 1);
+
+        size_t numScorePaths = 0;
+        for(RefToScorePathSteps::iterator iter = refToScorePaths.begin(); iter != refToScorePaths.end(); iter++)
+        {
+            populateScoreMatrix(iter->second, cMap, iter->first, scoreMatrix);
+            cout << "score matrix has size " << scoreMatrix.getSize() << ", capacity " << scoreMatrix.getCapacity() << endl;
+            numScorePaths += iter->second.size();
+        }
+        cout << "Got " << numScorePaths << "scorePaths.\n";
     }
 }

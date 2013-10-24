@@ -1,15 +1,22 @@
 #ifndef SCOREPATHSTEP_H
 #define SCOREPATHSTEP_H
 
+#include <utility>
 #include "MapChunk.h"
 
 class ScoreCell;
+typedef std::pair<int, int> IntPair;
 
 // ScorePathStep identifies one step through the dynamic programming table
 // as the alignment of a queryChunk with a referenceChunk
 class ScorePathStep
 {
     public:
+
+    ScorePathStep() : queryChunk_(nullptr),
+                      refChunk_(nullptr),
+                      src_(nullptr),
+                      tgt_(nullptr) { };
 
     ScorePathStep(const MapChunk * queryChunk, const MapChunk * refChunk) : 
         queryChunk_(queryChunk),
@@ -32,8 +39,12 @@ class ScorePathStep
     bool isBoundaryChunk() const { return isFirstQueryChunk() || isLastQueryChunk(); }
     void setSource(ScoreCell * src) { src_ = src;}
     void setTarget(ScoreCell * tgt) { tgt_ = tgt;}
-    const MapChunk * getQueryChunk() { return queryChunk_; }
-    const MapChunk * getRefChunk() { return refChunk_; }
+    ScoreCell* getSource() const { return src_; }
+    ScoreCell* getTarget() const { return tgt_; }
+    const MapChunk * getQueryChunk() const { return queryChunk_; }
+    const MapChunk * getRefChunk() const { return refChunk_; }
+    int getNumQueryFrags() const { return queryChunk_->getNumFrags(); }
+    int getNumRefFrags() const { return refChunk_->getNumFrags(); }
 
     private:
     // This is a step from src_ to target_, where src_'s coordinates

@@ -1,12 +1,21 @@
 #ifndef SCORECELL_H
 #define SCORECELL_H
+
 // ScoreCell is a cell in the dynamic programming table and
 // identifies its successors/predecessors.
+// It acts as a node in the DAG underlying the dynamic programming
+// table.
 
 #include<vector>
+#include<set>
+#include <unordered_map>
+
+#include "ScorePathStep.h"
 
 class ScoreCell;
 typedef std::vector<ScoreCell *> ScoreCellPVec;
+typedef std::set<ScoreCell *> ScoreCellSet;
+typedef std::pair<int, int> IntPair;
 
 class ScoreCell
 {
@@ -21,14 +30,20 @@ class ScoreCell
     bool operator==(const ScoreCell& other) const { return (key() == other.key()); } 
     size_t inDegree() const { return backPointers_.size(); };
     size_t outDegree() const { return forwardPointers_.size(); };
-    void reset();
+    bool removeBackPointer(const ScoreCell* dest);
+    bool removeForwardPointer(const ScoreCell* dest);
+    void removeBackPointers() { backPointers_.clear(); }
+    void removeForwardPointers() { forwardPointers_.clear(); }
+//    void reset();
 
     int q_;
     int r_;
     bool inPlay_;
+    double score_;
 
     ScorePathStepVec backPointers_;
     ScorePathStepVec forwardPointers_;
+    ScorePathStep backPointer_; // back pointer for DP solution path
 };
 
 /*

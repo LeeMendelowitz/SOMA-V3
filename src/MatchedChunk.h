@@ -9,6 +9,7 @@
 
 #include <vector>
 
+
 class MapData;
 
 typedef std::vector<FragData>::const_iterator FragConstIter;

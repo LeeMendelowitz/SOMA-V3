@@ -13,8 +13,10 @@ using std::unordered_set;
 #include "MapChunk.h"
 #include "ChunkDatabase.h"
 #include "ScorePathStep.h"
+
 typedef std::pair<int, int> IntPair;
 typedef std::unordered_set<IntPair> CoordSet;
+namespace seeded {class ScoreMatrix;}
 
 // Hash function declarations
 namespace std {
@@ -37,6 +39,8 @@ typedef RefToCoordSet::iterator RefToCoordSetIter;
 
 void calculateCellsInPlay(const MapChunkVec& queryChunks, ChunkDatabase& chunkDB, float tol, int minDelta,
                           RefToCoordSet& refToCoordSet);
+void getScorePaths(const MapChunkVec& queryChunks, ChunkDatabase& chunkDB, float tol, int minDelta, RefToScorePathSteps& refToScorePathSteps);
 void getCells(const ScorePathStepVec& vec, CoordSet& coordSet);
+void populateScoreMatrix(ScorePathStepVec& scorePathSteps, const MapData * queryMap, const MapData * refMap, seeded::ScoreMatrix& scoreMatrix);
 
 #endif

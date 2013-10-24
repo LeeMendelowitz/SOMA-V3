@@ -6,8 +6,17 @@
 #include <utility>
 #include <iostream>
 #include "mapTypes.h"
-#include "MapChunk.h"
+//#include "MapChunk.h"
 #include "MapChunkUtils.h"
+
+class MapChunk;
+typedef std::vector<FragData>::const_iterator FragDataConstIter;
+typedef std::vector<MapChunk*> MapChunkVec;                    
+typedef std::vector< MapChunkVec > MapChunkIndex;
+typedef std::vector<MapChunk*>::iterator MapChunkVecIter;      
+typedef std::vector<MapChunk*>::const_iterator MapChunkVecConstIter;
+typedef std::pair<MapChunkVecConstIter, MapChunkVecConstIter> MapChunkVecBounds;
+
 
 typedef std::vector<FragData> FragDataVec;
 
@@ -41,7 +50,7 @@ class MapData
         endToChunks_ = move(endToChunks);
     }
 
-    void freeChunks() { for(auto c: chunks_) delete c; }
+    void freeChunks();
     const MapChunkVec& getChunksByStartIndex(int index) { return startToChunks_[index]; }
     const MapChunkVec& getChunksByEndIndex(int index) { return endToChunks_[index]; }
     const MapChunkVec& getChunks() { return chunks_; }

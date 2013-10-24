@@ -12,8 +12,8 @@
 
 # Points to the root of Google Test, relative to where this file is.
 # Remember to tweak this if you move this file.
-GTEST_DIR = /home/lee/packages/gtest-1.7.0
-#GTEST_DIR = /fs/szattic-asmg7/lmendelo/packages/gtest-1.7.0
+#GTEST_DIR = /home/lee/packages/gtest-1.7.0
+GTEST_DIR = /fs/szattic-asmg7/lmendelo/packages/gtest-1.7.0
 
 # Where to find user code.
 USER_DIR = .

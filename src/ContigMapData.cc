@@ -14,7 +14,7 @@ ContigMapData::ContigMapData() :
     MapData(""),
     pTwin_(NULL),
     length_(0)
-    {};
+    {}
 
 // Constructor
 ContigMapData::ContigMapData(int length, const string& contigId, bool isForward) :

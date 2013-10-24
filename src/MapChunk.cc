@@ -3,8 +3,8 @@
 
 using namespace std;
 
-size_t MapChunk::getStartIndex() const { return bFrag_ - map_->getFragsB(); }
-size_t MapChunk::getEndIndex() const { return eFrag_ - map_->getFragsB(); }
+//size_t MapChunk::getStartIndex() const { return bFrag_ - map_->getFragsB(); }
+//size_t MapChunk::getEndIndex() const { return eFrag_ - map_->getFragsB(); }
 
 int sum(const FragDataConstIter bFrag, const FragDataConstIter eFrag)
 {
@@ -33,6 +33,10 @@ MapChunk::MapChunk(const MapChunk& other) :
     rank_(other.rank_),
     size_(other.size_)
 {}
+
+bool MapChunk::isFirstQueryChunk() const { return getStartIndex() == 0; }
+bool MapChunk::isLastQueryChunk() const { return getEndIndex() == map_->numFrags(); }
+bool MapChunk::isBoundaryChunk() const { return isFirstQueryChunk() || isLastQueryChunk(); }
 
 std::ostream& operator<<(std::ostream& o, const MapChunk& p)
 {

@@ -6,14 +6,15 @@ objects. Ideally a single ScoreMatrix should be used per thread
 for the lifetime of the thread.
     
 A ScoreMatrix should beinitialized up-front with ScoreCells, and
-ideally given a capacity large enough to handle any alignment problem.
+ideally given a capacity large enough to handle any alignment problem
+it will see.
 
-The ScoreMatrix will also track which cells are in use.
-
+The ScoreMatrix will also track which cells are in use by row.
 */
 
 #include "ScoreCell.h"
 #include "ScorePathStep.h"
+
 
 namespace seeded {
 
@@ -31,19 +32,25 @@ class ScoreMatrix
     ScoreCell * getCell(const IntPair& coord);
     ScoreCell * getCell(size_t coord);
     void addScorePathStep(ScorePathStep& step);
+    void resetCells();
 
     private:
     size_t numRows_;
     size_t numCols_;
-    size_t size_ = numRows_*numCols_;
+    size_t size_;
     ScoreCellVec data_;
-    vector<ScoreCellPVec> rowToCellsInPlay_;
+    vector<ScoreCellSet> rowToCellsInPlay_;
+    ScoreCellSet cellsInPlay_;
 };
 
+}
 
-inline void seeded::ScoreMatrix::ScoreMatrix(size_t numRows, size_t numCols) :
+
+
+inline seeded::ScoreMatrix::ScoreMatrix(size_t numRows, size_t numCols) :
     numRows_(numRows),
-    numCols_(numCols)
+    numCols_(numCols),
+    size_(numRows_*numCols_)
 {
 
 }
@@ -52,14 +59,21 @@ inline void seeded::ScoreMatrix::resize(size_t numRows, size_t numCols) {
     numRows_ = numRows;
     numCols_ = numCols;
     size_ = numRows*numCols;
-    if (size_ < data_.size())
+    if (size_ > data_.size())
+    {
         data_.resize(size_);
+    }
+
+    if (rowToCellsInPlay_.size() < numRows_)
+        rowToCellsInPlay_.resize(numRows_);
+
+    resetCells();
 }
 
 inline void seeded::ScoreMatrix::resetCells() {
-    for(int i = 0; i < numRows_; i++)
+    for(size_t i = 0; i < numRows_; i++)
     {
-        for(int j = 0; j < numCols_; j++)
+        for(size_t j = 0; j < numCols_; j++)
         {
             ScoreCell * pCell = getCell(i, j);
             pCell->q_ = i;
@@ -77,6 +91,10 @@ inline void seeded::ScoreMatrix::resetCells() {
             pCell->inPlay_ = false;
     }
 
+    cellsInPlay_.clear();
+
+    for(auto& cellSet : rowToCellsInPlay_)
+        cellSet.clear();
 }
 
 inline ScoreCell * seeded::ScoreMatrix::getCell(size_t row, size_t col) {
@@ -98,12 +116,15 @@ inline ScoreCell * seeded::ScoreMatrix::getCell(size_t n) {
 inline void seeded::ScoreMatrix::addScorePathStep(ScorePathStep& step)
 {
     // Determine the query start/end coords
-    step.tgt = getCell(step.startCoord());
-    step.src = getCell(step.endCoord());
+    ScoreCell * tgt = getCell(step.startCoord());
+    tgt->forwardPointers_.push_back(step);
 
-    // Note: These push_back's will copy.
-    step.tgt.forwardPointers_.push_back(step);
-    step.src.backPointers_.push_back(step);
+    ScoreCell * src = getCell(step.endCoord());
+    src->backPointers_.push_back(step);
+
+    step.setTarget(tgt);
+    step.setSource(src);
+    // Should we add step.src and step.tgt to the rowToCellsInPlay_?
 }
 
 

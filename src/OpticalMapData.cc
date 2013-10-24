@@ -15,7 +15,7 @@ OpticalMapData::OpticalMapData() :
     numFrags_(0),
     isCircular_(false),
     length_(0)
-    { };
+    { }
 
 // Constructor
 OpticalMapData::OpticalMapData(int numFrags, const string& opticalId, bool isCircular, const vector<FragData>& frags) :
@@ -26,7 +26,7 @@ OpticalMapData::OpticalMapData(int numFrags, const string& opticalId, bool isCir
 {
     calcFragBoundaries();
     if (isCircular_) makeCircular();
-};
+}
 
 //Constructor (from file)
 OpticalMapData::OpticalMapData(const string& mapFile, bool isCircular) :

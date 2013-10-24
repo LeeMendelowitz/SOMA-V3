@@ -1,4 +1,5 @@
 #include "MapData.h"
+#include "MapChunk.h"
 
 void MapData::indexChunks()
 {
@@ -12,3 +13,7 @@ void MapData::indexChunks()
     }
 }
 
+void MapData::freeChunks()
+{
+    for(auto c: chunks_) delete c;
+}

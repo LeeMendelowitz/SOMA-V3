@@ -1,5 +1,5 @@
-CXXFLAGS=-Wall -fopenmp -pedantic -std=c++0x                  
-IDIR=
+CXXFLAGS=-Wall -fopenmp -pedantic -std=c++0x -MMD
+IDIR=.
 
 GTEST_INC = /home/lee/packages/gtest-1.7.0/include
 
@@ -11,7 +11,7 @@ LIBDIR_RELEASE = ../lib/release
 LIBDIR_DEBUG = ../lib/debug
 LIBDIR_GPROF = ../lib/gprof
 
-all: debug release gprof testDatabase
+all: debug release testDatabase
 
 debug: CXXFLAGS += -DDEBUG -g -O0
 debug: OBJDIR = $(OBJDIR_DEBUG)
@@ -30,7 +30,6 @@ gprof: OBJDIR = $(OBJDIR_DEBUG)
 gprof: LIBDIR = $(LIBDIR_DEBUG)
 gprof: DIR=gprof
 gprof: ../bin/gprof/match
-
 
 
 testDatabase: ../test/bin/testDatabase
@@ -60,7 +59,8 @@ srcs=match.cc\
      xmlWriter.cc \
      ChunkDatabase.cc \
      MapChunk.cc \
-	 MapChunkUtils.cc
+	 MapChunkUtils.cc \
+	 ScoreCell.cc \
 
 _DEPS= AlignmentParams.h\
 	array2d.h\
@@ -102,26 +102,28 @@ _DEPS= AlignmentParams.h\
 	utils.h\
 	xmlWriter.h\
 
-DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+_DEPS = $(wildcard *.h)
+
+#DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 OBJS = $(patsubst %.cc,$(OBJDIR)/%.o,$(srcs))
+DEPS = ${OBJS:.o=.d} # substitute .o with .d
 OBJS_DEBUG = $(patsubst %.cc,$(OBJDIR_DEBUG)/%.o,$(srcs))
+DEPS_DEBUG= $(patsubst %,$(OBJDIR_DEBUG)/%,$(DEPS))
 OBJS_RELEASE = $(patsubst %.cc,$(OBJDIR_RELEASE)/%.o,$(srcs))
 OBJS_GPROF = $(patsubst %.cc,$(OBJDIR_GPROF)/%.o,$(srcs))
 
 
-%.o : %.cc $(DEPS)
-
-$(OBJS_DEBUG) : $(OBJDIR_DEBUG)/%.o: %.cc | $(OBJDIR_DEBUG)
+$(OBJS_DEBUG) : $(OBJDIR_DEBUG)/%.o : %.cc | $(OBJDIR_DEBUG)
 	@echo making debug object $@
-	$(CXX) $(CXXFLAGS) -c $^ -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(OBJS_RELEASE) : $(OBJDIR_RELEASE)/%.o: %.cc | $(OBJDIR_RELEASE)
+$(OBJS_RELEASE) : $(OBJDIR_RELEASE)/%.o : %.cc  | $(OBJDIR_RELEASE)
 	@echo making release object $@
-	$(CXX) $(CXXFLAGS) -c $^ -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(OBJS_GPROF) : $(OBJDIR_GPROF)/%.o: %.cc | $(OBJDIR_GPROF)
+$(OBJS_GPROF) : $(OBJDIR_GPROF)/%.o : %.cc  | $(OBJDIR_GPROF)
 	@echo making gprof object $@
-	$(CXX) $(CXXFLAGS) -c $^ -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 	
 
 ####################################################
@@ -181,9 +183,24 @@ $(OBJS_GPROF) : $(OBJDIR_GPROF)/%.o: %.cc | $(OBJDIR_GPROF)
 ../test/bin/%: ../test/%.cc ../lib/debug/soma.a | ../test/bin
 	$(CXX) $(CXXFLAGS) -lpthread -I../test -I. -I$(GTEST_INC) /usr/local/lib/gtest.a ../lib/debug/soma.a -o $@
 
+################################################
+# make dependencies
+# (this needs to be fixed)
+#depend: .depend
+
+#.depend: $(srcs)
+#	#rm -f ./.depend
+#	$(CXX) $(CXXFLAGS) -MM $^ -MF ./.depend;
+
+#include .depend
+################################################
+
 .PHONY : clean
 clean:
 	@echo Cleaning Files.
 	rm -f ../bin/match ../bin/match_d
 	rm -rf ../build
 	rm -rf ../lib
+
+# Note: This hack works to get the dependencies recognized.
+include ${DEPS_DEBUG}

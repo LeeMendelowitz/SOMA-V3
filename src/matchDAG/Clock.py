@@ -16,17 +16,17 @@ class Clock(object):
         self.start()
 
     def start(self):
-        self.start = datetime.now()
+        self.startTime = datetime.now()
 
     begin = start
 
     def tick(self):
-        d = (datetime.now() - self.start)
+        d = (datetime.now() - self.startTime)
         w('Elapsed: %.2f\n'%d.total_seconds())
 
     def end(self):
-        self.end = datetime.now()
-        d = (datetime.now() - self.start)
+        self.endTime = datetime.now()
+        d = (datetime.now() - self.startTime)
         self.elapsed = d.total_seconds()
         w('Elapsed: %.2f\n'%self.elapsed)
 

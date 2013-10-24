@@ -5,6 +5,7 @@
 #include <ostream>
 #include <utility>
 #include "mapTypes.h"
+#include "MapData.h"
 
 // Class to represent a chunk from
 // a query map or reference map.
@@ -43,8 +44,11 @@ class MapChunk
         return this->size_ <= fragSize;
     }
 
-    /*inline*/ size_t getStartIndex() const;
-    /*inline*/ size_t getEndIndex() const;
+    size_t getStartIndex() const { return bFrag_ - map_->getFragsB(); };
+    size_t getEndIndex() const { return eFrag_ - map_->getFragsB(); };
+    bool isFirstQueryChunk() const ;
+    bool isLastQueryChunk() const ;
+    bool isBoundaryChunk() const ;
     int getNumFrags() const { return eFrag_ - bFrag_; }
 
     // members

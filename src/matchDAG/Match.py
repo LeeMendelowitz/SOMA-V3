@@ -12,6 +12,7 @@ import numpy as np
 from Clock import Clock
 from collections import defaultdict
 import sys
+from Chunk import chunksFromMap
 
 def DEBUG(msg):
     sys.stderr.write(msg + '\n')
@@ -67,47 +68,85 @@ def match(queryMap, chunkDB, minDelta = 1000, tol = 0.1):
 
     return DictWrap(ret)
 
-def dynamicProgammingTest(queryMap, chunkDB, minDelta=1000, tol=0.1):
+def dynamicProgrammingTest(queryMap, chunkDB, minDelta=1000, tol=0.1, maxInteriorSitesQuery=3):
     """
     Compute the number of dynamic programming cells that are populated for a given query Map
     """
 
     # construct lower bounds and upper bounds
-    frags = np.array(queryMap.frags[1:-1])
-    numFrags = frags.shape[0]
+    queryChunks = chunksFromMap(queryMap, maxInteriorSitesQuery)
+
+    # Ignore boundary chunks
+    numFrags = len(queryMap.frags)
+    queryChunks = [c for c in queryChunks if (c.bInd != 0) and (c.eInd != numFrags)]
+    chunkSizes = np.array([c.size for c in queryChunks]) 
+    numChunks = len(queryChunks)
 
     # Compute the upper/lower bounds for each fragment
-    deltas = tol * frags
-    minDeltas = minDelta * np.ones(numFrags)
+    deltas = tol * chunkSizes
+    minDeltas = minDelta * np.ones(numChunks)
     deltas = np.max([deltas, minDeltas], axis=0)
-    lbs = frags - deltas
-    ubs = frags + deltas
+    lbs = chunkSizes - deltas
+    ubs = chunkSizes + deltas
 
-    fragHits = [chunkDB.getChunks(lb, ub) for lb,ub in zip(lbs, ubs)]
+    chunkHits = [chunkDB.getChunks(lb, ub) for lb,ub in zip(lbs, ubs)]
 
     # The coordinates (fragIndex, chromosome name, chromosome chunk end index) give the coordinates
     # of a single cell in the dynamic programming table.
     # For each chromosome, compute the total number of cells, and number of cells that have a match.
-    coordGen = ((fInd, rc.map, rc.eInd) for fInd, refHits in enumerate(fragHits) for rc in refHits)
-    refMapToHits = defaultdict(set)
-    for fInd, refMap, eInd in coordGen:
-        refMapToHits[refMap].add((fInd, eInd))
+    coordGen = ((c.bInd, c.eInd, rc.map, rc.bInd, rc.eInd) for c, refHitList in zip(queryChunks,chunkHits) for rc in refHitList)
+
+    rowToHits = lambda : [set() for i in range(numFrags+1)]
+    refMapToHits = defaultdict(rowToHits)
+    refMapToInboundHit = defaultdict(rowToHits) # Backpointer points to cell
+    refMapToOutboundHit = defaultdict(rowToHits) # Backpointer points from cell
+    for qb, qe, refMap, rb, re in coordGen:
+        # just add the ending coordinate of chunk
+        refMapToHits[refMap][qe].add(re)
+        refMapToHits[refMap][qb].add(qe)
+        refMapToInboundHit[refMap][qb].add(rb)
+        refMapToOutboundHit[refMap][qe].add(re)
+        #refMapToHits[refMap].add((qe, re))
+        #refMapToHits[refMap].add((qb,qe))
 
     mapToData = {}
-    for map, hits in refMapToHits.iteritems():
-        numMapFrags = map.numFrags
+    refMaps = refMapToHits.keys()
+    for refMap in refMaps:
+        rowToHits = refMapToHits[refMap]
+        rowToInboundHit = refMapToInboundHit[refMap]
+        rowToOutboundHit = refMapToOutboundHit[refMap]
+        numMapFrags = refMap.numFrags
         numQueryFrags = numFrags
+
+        # Count interior cells (i.e. non boundary cases)
+        # That have both an inbound and outbound hit.
+        maxMisses = maxInteriorSitesQuery
+        interiorRows = range(maxMisses+1 , numQueryFrags-maxMisses)
+        numInteriorRows = len(interiorRows)
+        numBothInboundOutbound = 0
+        for irow in interiorRows:
+            numBothInboundOutbound += len(rowToInboundHit[irow].intersection(rowToOutboundHit[irow]))
+
+
         numCells = numMapFrags*numQueryFrags
-        numHits = len(hits)
+        numInteriorCells = numMapFrags*numInteriorRows
+        numHits = sum(len(rowHits) for rowHits in rowToHits)
+        numInteriorHits = sum(len(rowToHits[r]) for r in interiorRows)
         fracHits = float(numHits)/float(numCells)
         d = {'numMapFrags' : numMapFrags,
              'numQueryFrags' : numQueryFrags,
+             'numQueryChunks' : len(queryChunks),
              'numCells' : numCells,
+             'numInteriorCells' : numInteriorCells,
+             'numInteriorHits' : numInteriorHits,
              'numHits' : numHits,
              'fracHits' : fracHits,
-             'map' : map,
-             'mapId' : map.mapId}
-        mapToData[map] = DictWrap(d)
+             'fracInteriorHits' : float(numInteriorHits)/float(numInteriorCells),
+             'numConnectedInteriorCells' : numBothInboundOutbound,
+             'fracConnectedInteriorCells' : float(numBothInboundOutbound)/float(numInteriorCells),
+             'refMap' : refMap,
+             'refMapId' : refMap.mapId}
+        mapToData[refMap.mapId] = DictWrap(d)
 
     return mapToData
 
