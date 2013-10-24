@@ -113,7 +113,6 @@ void getScorePaths(const MapChunkVec& queryChunks, ChunkDatabase& chunkDB, float
     }
 }
 
-
 // Populate the ScoreMatrix with the scorePathSteps.
 // This is equivalent to setting the allowable edges in the DAG dynamic programming structure
 void populateScoreMatrix(ScorePathStepVec& scorePathSteps, const MapData * queryMap, const MapData * refMap, seeded::ScoreMatrix& scoreMatrix)
@@ -128,7 +127,7 @@ void populateScoreMatrix(ScorePathStepVec& scorePathSteps, const MapData * query
 }
 
 // Fill in scores/backpointers in the dynamic programming table.
-void dp(seeded::ScoreMatrix& scoreMatrix, size_t maxMissesQuery, size_t maxMissesReference, const AlignmentParams& alignParams)
+void dp(seeded::ScoreMatrix& scoreMatrix, const AlignmentParams& alignParams)
 {
     const size_t numRows = scoreMatrix.getNumRows();
     const size_t numCols = scoreMatrix.getNumCols();
@@ -143,13 +142,21 @@ void dp(seeded::ScoreMatrix& scoreMatrix, size_t maxMissesQuery, size_t maxMisse
     }
 
     // Initialize first column
-    for (size_t row = 0; row < numRows; row++)
+    for (size_t row = 1; row < numRows; row++)
     {
         ScoreCell * pCell = scoreMatrix.getCell(row,0);
         pCell->score_ = -Constants::INF;
         pCell->backPointer_ = defaultBackpointer;
     }
 
+    // Initialize rest
+    for (size_t row = 1; row < numRows; row++) {
+        for(size_t col = 1; col < numCols; col++) {
+            ScoreCell * pCell = scoreMatrix.getCell(row,col);
+            pCell->score_ = -Constants::INF;
+            pCell->backPointer_ = defaultBackpointer;
+        }
+    }
 
     for (size_t i = 1; i < numRows; i++)
     {

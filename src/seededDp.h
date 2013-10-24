@@ -17,6 +17,7 @@ using std::unordered_set;
 typedef std::pair<int, int> IntPair;
 typedef std::unordered_set<IntPair> CoordSet;
 namespace seeded {class ScoreMatrix;}
+class AlignmentParams;
 
 // Hash function declarations
 namespace std {
@@ -42,5 +43,6 @@ void calculateCellsInPlay(const MapChunkVec& queryChunks, ChunkDatabase& chunkDB
 void getScorePaths(const MapChunkVec& queryChunks, ChunkDatabase& chunkDB, float tol, int minDelta, RefToScorePathSteps& refToScorePathSteps);
 void getCells(const ScorePathStepVec& vec, CoordSet& coordSet);
 void populateScoreMatrix(ScorePathStepVec& scorePathSteps, const MapData * queryMap, const MapData * refMap, seeded::ScoreMatrix& scoreMatrix);
+void dp(seeded::ScoreMatrix& scoreMatrix, const AlignmentParams& alignParams);
 
 #endif

@@ -26,7 +26,7 @@ class AlignmentParams
         // Shape parameters for parabola for local scoring function
         // Consider creating a class for 
         T2 = T_in * T_in;
-        A = H_in / (T2); 
+        A = T2 > 0 ? H_in / (T2) : 0;
 
     }
 

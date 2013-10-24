@@ -34,6 +34,10 @@ class ScoreMatrix
     void addScorePathStep(ScorePathStep& step);
     void resetCells();
 
+    // Summary Functions
+    size_t countFilledCells();
+    double getMaxScore();
+
     private:
     size_t numRows_;
     size_t numCols_;
@@ -41,6 +45,7 @@ class ScoreMatrix
     ScoreCellVec data_;
     vector<ScoreCellSet> rowToCellsInPlay_;
     ScoreCellSet cellsInPlay_;
+
 };
 
 }
@@ -117,13 +122,13 @@ inline void seeded::ScoreMatrix::addScorePathStep(ScorePathStep& step)
 {
     // Determine the query start/end coords
     ScoreCell * tgt = getCell(step.startCoord());
-    tgt->forwardPointers_.push_back(step);
-
     ScoreCell * src = getCell(step.endCoord());
-    src->backPointers_.push_back(step);
 
     step.setTarget(tgt);
     step.setSource(src);
+
+    tgt->forwardPointers_.push_back(step);
+    src->backPointers_.push_back(step);
     // Should we add step.src and step.tgt to the rowToCellsInPlay_?
 }
 

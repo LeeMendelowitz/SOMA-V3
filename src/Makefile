@@ -61,6 +61,7 @@ srcs=match.cc\
      MapChunk.cc \
 	 MapChunkUtils.cc \
 	 ScoreCell.cc \
+	 ScoreMatrixSeeded.cc
 
 _DEPS= AlignmentParams.h\
 	array2d.h\
@@ -203,4 +204,4 @@ clean:
 	rm -rf ../lib
 
 # Note: This hack works to get the dependencies recognized.
-include ${DEPS_DEBUG}
+-include ${DEPS_DEBUG}

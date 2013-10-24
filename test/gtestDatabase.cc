@@ -12,6 +12,8 @@ using std::vector;
 #include "MapChunkUtils.h"
 #include "ScoreMatrixSeeded.h"
 #include "seededDp.h"
+#include "AlignmentParams.h"
+#include "globals.h"
 
 // To use a test fixture, derive a class from testing::Test.
 class DatabaseTest : public testing::Test {
@@ -258,6 +260,7 @@ TEST_F(DatabaseTest, GetScorePaths)
 
     // Populate chunks for each query
     vector<MapChunkVec> mapChunks(contigMaps_.size());
+    AlignmentParams alignParams(3, 5, 5, Constants::SIGMA, 3, 3, 0, 0, 0, 0);
     for (size_t i = 0; i < contigMaps_.size(); i++)
     {
         ContigMapData * cMap = contigMaps_[i];
@@ -275,6 +278,11 @@ TEST_F(DatabaseTest, GetScorePaths)
             populateScoreMatrix(iter->second, cMap, iter->first, scoreMatrix);
             cout << "score matrix has size " << scoreMatrix.getSize() << ", capacity " << scoreMatrix.getCapacity() << endl;
             numScorePaths += iter->second.size();
+            cout << "doing dp..." << flush;
+            dp(scoreMatrix, alignParams);
+            cout << "done.\n";
+            cout << "number of filled cells: " << scoreMatrix.countFilledCells() << "\n";
+            cout << "Max score: " << scoreMatrix.getMaxScore() << endl;
         }
         cout << "Got " << numScorePaths << "scorePaths.\n";
     }
