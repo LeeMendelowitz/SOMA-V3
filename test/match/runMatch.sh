@@ -1,7 +1,7 @@
 #!/bin/bash -x
 BIN_DIR=../../bin
-MATCH_BIN_DEBUG=$BIN_DIR/match_d
-MATCH_BIN_RELEASE=$BIN_DIR/match
+MATCH_BIN_DEBUG=$BIN_DIR/debug/match
+MATCH_BIN_RELEASE=$BIN_DIR/release/match
 
 # TEST RELEASE
 $MATCH_BIN_RELEASE --output test100WithError --pvalue=0.05 --sdMin=4 --sdMax=4 --numPermutationTrials 1000 --numThreads 4 contigs.silico map100.opt

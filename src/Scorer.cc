@@ -1,7 +1,7 @@
 #include "Scorer.h"
 
 #include "MatchResult.h"
-
+/*
 Score Scorer::scoreMatchedChunk(MatchedChunk& chunk)
 {
     Score score;
@@ -29,3 +29,4 @@ void Scorer::scoreMatchResult(MatchResult * pResult)
     for(; iter != E; iter++)
         scoreMatchedChunk(*iter);
 }
+*/

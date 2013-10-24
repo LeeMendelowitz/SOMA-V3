@@ -43,15 +43,12 @@ srcs=match.cc\
      globals.cc \
      dp.cc \
 	 seededDp.cc \
-     Scorer.cc \
 	 utils.cc \
 	 debugUtils.cc \
 	 ContigMapData.cc \
 	 MatchResult.cc \
 	 OpticalMapData.cc \
 	 pugixml.cc \
-	 StandardMatchMaker.cc \
-	 LocalMatchMaker.cc  \
 	 scoringFunctions.cc \
      MatchedChunk.cc \
 	 MapReader.cc \
@@ -62,6 +59,9 @@ srcs=match.cc\
 	 MapChunkUtils.cc \
 	 ScoreCell.cc \
 	 ScoreMatrixSeeded.cc
+	 #StandardMatchMaker.cc \
+	 #LocalMatchMaker.cc  \
+     #Scorer.cc \
 
 _DEPS= AlignmentParams.h\
 	array2d.h\

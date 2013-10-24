@@ -13,7 +13,8 @@
 using namespace std;
 
 // The ScoreMatrix for local alignment is filled with entries with scores of zero or greater
-bool LocalMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResultPtrVec& matches,
+template <typename Scorer>
+bool LocalMatchMaker<Scorer>::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResultPtrVec& matches,
                                      const MapData * pOpticalMap, const MapData * pContigMap, bool contigIsForward)
 {
 
@@ -75,7 +76,8 @@ bool LocalMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResul
 // Check that this alignment does not use any cells in the ScoreMatrix that
 // have already been used in a higher scoring alignment.
 // If the Match is not acceptable, return NULL
-MatchResult * LocalMatchMaker::buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
+template <typename Scorer>
+MatchResult * LocalMatchMaker<Scorer>::buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
                                           const ContigMapData * pContigMap, bool contigIsForward,
                                           set<Index_t>& usedCells)
 {
@@ -262,7 +264,8 @@ MatchResult * LocalMatchMaker::buildMatch(const Index_t& end_index, const ScoreM
 }
 
 // Return true if MatchResult is acceptable
-bool LocalMatchMaker::filterFunction(const MatchResult * pResult)
+template< typename Scorer>
+bool LocalMatchMaker<Scorer>::filterFunction(const MatchResult * pResult)
 {
 
     //Chi2 Filter

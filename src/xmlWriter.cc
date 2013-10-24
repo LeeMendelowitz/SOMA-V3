@@ -37,8 +37,12 @@ XMLWriter::~XMLWriter()
 //
 void XMLWriter::close()
 {
+    if(!pXmlFile_ || !pXmlFile_->is_open())
+        return;
+
     if (pXmlFile_->good())
         *pXmlFile_ << "</alignments>" << endl;
+
     pXmlFile_->close();
 }
 

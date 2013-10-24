@@ -1,8 +1,8 @@
 #!/bin/bash
 #/cbcb/project-scratch/lmendelo/soma/test/testMatch
 BIN_DIR=../../bin
-MATCH_BIN_DEBUG=$BIN_DIR/match_d
-MATCH_BIN_RELEASE=$BIN_DIR/match
+MATCH_BIN_DEBUG=$BIN_DIR/debug/match
+MATCH_BIN_RELEASE=$BIN_DIR/release/match
 PTRIALS=0
 THREADS=1
 

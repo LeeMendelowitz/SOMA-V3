@@ -30,7 +30,8 @@ bool hasOverlap(const MatchResult* pMatch, MatchResultPtrVec::const_iterator B, 
     return hasOverlap;
 }
 
-bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResultPtrVec& matches,
+template <typename Scorer>
+bool StandardMatchMaker<Scorer>::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchResultPtrVec& matches,
                                      const MapData * pOpticalMap, const MapData * pContigMap, bool contigIsForward)
 {
 
@@ -107,7 +108,8 @@ bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, MatchRe
 }
 
 
-MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
+template <typename Scorer>
+MatchResult * StandardMatchMaker<Scorer>::buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
                                              const ContigMapData * pContigMap, bool contigIsForward)
 {
 
@@ -291,7 +293,8 @@ MatchResult * StandardMatchMaker::buildMatch(const Index_t& end_index, const Sco
 }
 
 // Return true if MatchResult is acceptable
-bool StandardMatchMaker::filterFunction(const MatchResult * pResult)
+template <typename Scorer>
+bool StandardMatchMaker<Scorer>::filterFunction(const MatchResult * pResult)
 {
 
     //Chi2 Filter

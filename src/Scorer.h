@@ -30,6 +30,7 @@ class Score
     double sizing; // Score for sizing error
 };
 
+/*
 class Scorer
 {
 
@@ -54,5 +55,6 @@ class Scorer
     protected:
         AlignmentParams ap_;
 };
+*/
 
 #endif

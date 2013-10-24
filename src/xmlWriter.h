@@ -14,7 +14,7 @@ class MatchedChunk;
 class XMLWriter
 {
     public:
-
+        XMLWriter() : pXmlFile_(nullptr) { }
         ~XMLWriter();
         void open(const char * filename);
         void close();

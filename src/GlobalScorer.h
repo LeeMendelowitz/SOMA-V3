@@ -6,13 +6,12 @@
 // In this scoring scheme, the scores are negative (representing penalties).
 // The more positive (less negative) the score is, the better.
 
-class GlobalScorer : public Scorer
+class GlobalScorer
 {
 
     public:
     GlobalScorer(const AlignmentParams& ap) :
-        Scorer(ap)
-        {}
+        ap_(ap) {}
     ~GlobalScorer() {}
     inline Score scoreGap(int gapSize);
     inline Score scoreAlignment(const std::vector<FragData>::const_iterator cB,
@@ -20,9 +19,12 @@ class GlobalScorer : public Scorer
                          const std::vector<FragData>::const_iterator oB,
                          const std::vector<FragData>::const_iterator oE,
                          bool boundaryFrag);
+    void scoreMatchResult(MatchResult * pResult);
+    Score scoreMatchedChunk(MatchedChunk& chunk);
 
     private:
     double contigMissedSitePenalty(int dToClosestSite);
+    AlignmentParams ap_;
 };
 
 // Penalty for "losing" a small contig fragment.
@@ -102,6 +104,34 @@ inline Score GlobalScorer::scoreAlignment( const vector<FragData>::const_iterato
     }
 
     return Score(contigMissScore, opticalMissScore, chi2);
+}
+
+Score GlobalScorer::scoreMatchedChunk(MatchedChunk& chunk)
+{
+    Score score;
+
+    if (chunk.isContigGap())
+    {
+        score = scoreGap(chunk.getContigMatchLengthBp());
+    }
+    else
+    {
+        score = scoreAlignment(chunk.getContigFragB(), chunk.getContigFragE(), chunk.getOpticalFragB(),
+                               chunk.getOpticalFragE(), chunk.isBoundaryChunk());
+    }
+
+    chunk.setScore(score);
+    return score;
+}
+
+// Score the matched chunks in a MatchResult
+void GlobalScorer::scoreMatchResult(MatchResult * pResult)
+{
+    std::vector<MatchedChunk>& chunkList = pResult->matchedChunkList_;
+    std::vector<MatchedChunk>::iterator iter = chunkList.begin();
+    std::vector<MatchedChunk>::iterator E = chunkList.end();
+    for(; iter != E; iter++)
+        scoreMatchedChunk(*iter);
 }
 
 #endif

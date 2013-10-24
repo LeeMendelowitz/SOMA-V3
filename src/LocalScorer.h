@@ -1,18 +1,16 @@
 #ifndef LOCAL_SCORER_H
 #define LOCAL_SCORER_H
 
-#include "Scorer.h"
-
 
 // In this scoring scheme, the scores are negative (representing penalties).
 // The more positive (less negative) the score is, the better.
 
-class LocalScorer : public Scorer
+class LocalScorer
 {
 
     public:
     LocalScorer(const AlignmentParams& ap) :
-        Scorer(ap)
+        ap_(ap)
         {}
     ~LocalScorer() {}
 
@@ -24,11 +22,14 @@ class LocalScorer : public Scorer
                          const std::vector<FragData>::const_iterator oB,
                          const std::vector<FragData>::const_iterator oE,
                          bool boundaryFrag);
+    Score scoreMatchedChunk(MatchedChunk& chunk);
+    void scoreMatchResult(MatchResult * pResult);
 
     private:
     inline Score scoringFunction(int nContigSites, int nOpticalSites,
                            int contigLength, int opticalLength,
                            bool boundaryFrag);
+    AlignmentParams ap_;
 };
 
 
@@ -91,5 +92,32 @@ inline Score LocalScorer::scoringFunction(int nContigSites, int nOpticalSites,
     return Score(contigScore, opticalScore, sizeScore);
 }
 
+Score LocalScorer::scoreMatchedChunk(MatchedChunk& chunk)
+{
+    Score score;
+
+    if (chunk.isContigGap())
+    {
+        score = scoreGap(chunk.getContigMatchLengthBp());
+    }
+    else
+    {
+        score = scoreAlignment(chunk.getContigFragB(), chunk.getContigFragE(), chunk.getOpticalFragB(),
+                               chunk.getOpticalFragE(), chunk.isBoundaryChunk());
+    }
+
+    chunk.setScore(score);
+    return score;
+}
+
+// Score the matched chunks in a MatchResult
+void LocalScorer::scoreMatchResult(MatchResult * pResult)
+{
+    std::vector<MatchedChunk>& chunkList = pResult->matchedChunkList_;
+    std::vector<MatchedChunk>::iterator iter = chunkList.begin();
+    std::vector<MatchedChunk>::iterator E = chunkList.end();
+    for(; iter != E; iter++)
+        scoreMatchedChunk(*iter);
+}
 
 #endif
