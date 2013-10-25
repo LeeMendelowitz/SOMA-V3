@@ -1,7 +1,7 @@
 #ifndef LOCALMATCHMAKER_H
 #define LOCALMATCHMAKER_H
 
-#include "MatchMaker.h"
+//#include "MatchMaker.h"
 #include "MatchResult.h"
 #include "debugUtils.h"
 
@@ -15,7 +15,7 @@
 
 // The LocalMatchMaker builds local alignments.
 template <typename Scorer>
-class LocalMatchMaker : public MatchMaker
+class LocalMatchMaker
 {
 
     public:

@@ -58,9 +58,9 @@ srcs=match.cc\
      MapChunk.cc \
 	 MapChunkUtils.cc \
 	 ScoreCell.cc \
-	 ScoreMatrixSeeded.cc
-	 #StandardMatchMaker.cc \
-	 #LocalMatchMaker.cc  \
+	 ScoreMatrixSeeded.cc\
+	 StandardMatchMaker.cc 
+	# LocalMatchMaker.cc  \
      #Scorer.cc \
 
 _DEPS= AlignmentParams.h\

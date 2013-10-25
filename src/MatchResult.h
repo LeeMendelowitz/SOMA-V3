@@ -130,5 +130,7 @@ std::ostream& operator<<(std::ostream& os, const MatchResult& mr);
 void printAttributes(std::ostream& os, const MatchResult& mr);
 
 typedef std::pair<int,int> Index_t;
+typedef std::vector<MatchResult*> MatchResultPtrVec;
+typedef std::vector<MatchResult> MatchResultVec;
 
 #endif

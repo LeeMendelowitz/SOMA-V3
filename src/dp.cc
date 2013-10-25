@@ -342,10 +342,10 @@ MatchResult *  match(const ContigMapData * pContigMap, const OpticalMapData * pO
 
     // Build matches from the score matrix
     GlobalScorer scorer(alignParams);
-    StandardMatchMaker<GlobalScorer> matchMaker(&scorer, opt::maxMatchesPerContig, opt::minContigHits,
+    StandardMatchMaker matchMaker(opt::maxMatchesPerContig, opt::minContigHits,
                                   opt::minLengthRatio, opt::maxMissRateContig, opt::avgChi2Threshold);
     MatchResultPtrVec matches;
-    matchMaker.makeMatches(pScoreMatrix, matches, pOpticalMap, pContigMap, contigIsForward);
+    matchMaker.makeMatches(pScoreMatrix, &scorer, matches, pOpticalMap, pContigMap, contigIsForward);
 
     #if DEBUG_MATCH_GLOBAL > 0
     std::cout << "Found " << matches.size()
@@ -408,10 +408,10 @@ MatchResult *  match2(const ContigMapData * pContigMap, const OpticalMapData * p
 
     // Build matches from the score matrix
     GlobalScorer scorer(alignParams);
-    StandardMatchMaker<GlobalScorer> matchMaker(&scorer, opt::maxMatchesPerContig, opt::minContigHits,
+    StandardMatchMaker matchMaker(opt::maxMatchesPerContig, opt::minContigHits,
                                   opt::minLengthRatio, opt::maxMissRateContig, opt::avgChi2Threshold);
     MatchResultPtrVec matches;
-    matchMaker.makeMatches(pScoreMatrix, matches, pOpticalMap, pContigMap, contigIsForward);
+    matchMaker.makeMatches(pScoreMatrix, &scorer, matches, pOpticalMap, pContigMap, contigIsForward);
 
     #if DEBUG_MATCH_GLOBAL > 0
     std::cout << "Found " << matches.size()
