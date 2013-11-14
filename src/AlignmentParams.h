@@ -11,7 +11,7 @@ class AlignmentParams
     AlignmentParams(double C_r_contig_in, double C_r_optical_in, double C_sigma_in,
                     double sigma2_in, int maxChunkMissesQuery_in, int maxChunkMissesReference_in,
                     double smallFrag_in, double smallFragSlope_in,
-                    double H_in, double T_in)
+                    double H_in, double T_in, double tol_in = 0.10, int minDelta_in = 1000)
     {
         C_r_contig = C_r_contig_in;
         C_r_optical = C_r_optical_in;
@@ -27,6 +27,9 @@ class AlignmentParams
         // Consider creating a class for 
         T2 = T_in * T_in;
         A = T2 > 0 ? H_in / (T2) : 0;
+
+        tol = tol_in;
+        minDelta = minDelta_in;
 
     }
 
@@ -45,6 +48,10 @@ class AlignmentParams
     // Params for local alignment
     double A;
     double T2;
+
+    // Params for approximate fragment matching
+    double tol;
+    int minDelta;
 
 };
 

@@ -2,11 +2,21 @@
 #include <utility>
 using std::move;
 #include <limits>
+#include <algorithm>
+using std::min;
 
+#include "MatchResult.h"
 #include "seededDp.h"
 #include "ScoreMatrixSeeded.h"
+#include "StandardMatchMaker.h"
 #include "ScoreCell.h"
 #include "scoringFunctions.h"
+#include "GlobalScorer.h"
+#include "Clock.h"
+
+#define SEEDED_DP_DEBUG 1
+
+using seeded::ScoreMatrix;
 
 using namespace std;
 
@@ -68,7 +78,7 @@ void calculateCellsInPlay(const MapChunkVec& queryChunks, ChunkDatabase& chunkDB
 }
 
 // Compute the score paths using the chunkDB.
-void getScorePaths(const MapChunkVec& queryChunks, ChunkDatabase& chunkDB, float tol, int minDelta, RefToScorePathSteps& refToScorePathSteps)
+void getScorePaths(const MapChunkVec& queryChunks, const ChunkDatabase& chunkDB, float tol, int minDelta, RefToScorePathSteps& refToScorePathSteps)
 {
 
     // Calculate lower and upper bounds for the queryChunks
@@ -115,7 +125,7 @@ void getScorePaths(const MapChunkVec& queryChunks, ChunkDatabase& chunkDB, float
 
 // Populate the ScoreMatrix with the scorePathSteps.
 // This is equivalent to setting the allowable edges in the DAG dynamic programming structure
-void populateScoreMatrix(ScorePathStepVec& scorePathSteps, const MapData * queryMap, const MapData * refMap, seeded::ScoreMatrix& scoreMatrix)
+void setScoreMatrixPathSteps(ScorePathStepVec& scorePathSteps, const MapData * queryMap, const MapData * refMap, seeded::ScoreMatrix& scoreMatrix)
 {
     const size_t numQueryFrags = queryMap->numFrags();
     const size_t numRefFrags = refMap->numFrags();
@@ -127,7 +137,7 @@ void populateScoreMatrix(ScorePathStepVec& scorePathSteps, const MapData * query
 }
 
 // Fill in scores/backpointers in the dynamic programming table.
-void dp(seeded::ScoreMatrix& scoreMatrix, const AlignmentParams& alignParams)
+void fillScoreMatrix(seeded::ScoreMatrix& scoreMatrix, const AlignmentParams& alignParams)
 {
     const size_t numRows = scoreMatrix.getNumRows();
     const size_t numCols = scoreMatrix.getNumCols();
@@ -172,6 +182,7 @@ void dp(seeded::ScoreMatrix& scoreMatrix, const AlignmentParams& alignParams)
                  stepIter++)
             {
                 const ScorePathStep& pathStep = *stepIter;
+                assert(pathStep.getSource() == pCell);
                 ScoreCell * pTarget = pathStep.getTarget();
                 if (pTarget->score_ == -Constants::INF)
                     continue;
@@ -248,4 +259,102 @@ void getCells(const ScorePathStepVec& vec, CoordSet& coordSet)
         const ScorePathStep& sp = vec[i];
         coordSet.insert(sp.endCoord());
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Match the fragments from a single contig to all of the reference maps.
+// return the best match as a new MatchResult
+// if pAllMatches is not NULL, add all matches (inlcuding the best one) to pAllMatches vector.
+MatchResult *  seededMatch(ContigMapData * cMap, const ChunkDatabase& chunkDB, 
+                     ScoreMatrix& scoreMatrix, vector<MatchResult *> * pAllMatches, const AlignmentParams& alignParams)
+{
+
+    Clock clock;
+    MatchResult * bestMatch = nullptr;
+    bool contigIsForward = cMap->isForward();
+    const vector<FragData>& contigFrags = cMap->getFrags();
+
+    // Extract chunks from the query
+    setMapChunks(cMap, alignParams.maxChunkMissesQuery);
+
+    // Get compatible alignments between query and reference
+
+    RefToScorePathSteps refToScorePaths;
+    clock.lap();
+    getScorePaths(cMap->getChunks(), chunkDB, alignParams.tol, alignParams.minDelta, refToScorePaths);
+    std::cout << "Getting Score Paths: " << clock.lap() << " elapsed.\n";
+
+    GlobalScorer scorer(alignParams);
+    StandardMatchMaker matchMaker(opt::maxMatchesPerContig, opt::minContigHits,
+                                  opt::minLengthRatio, opt::maxMissRateContig, opt::avgChi2Threshold);
+    size_t numScorePaths = 0;
+
+    // Build matches from the score matrix
+    MatchResultPtrVec allMatches;
+
+    clock.lap();
+    for(RefToScorePathSteps::iterator iter = refToScorePaths.begin(); iter != refToScorePaths.end(); iter++)
+    {
+        auto refMap = iter->first;
+        auto& scorePathSteps = iter->second;
+
+        Clock clock;
+
+        // Reset the score matrix
+        clock.lap();
+        scoreMatrix.resetCells();
+        std::cout << "Reset: " << clock.lap() << "\n";
+    
+
+        ////////////////////////////////////////
+        // Perform dynamic programming
+        clock.lap();
+        setScoreMatrixPathSteps(scorePathSteps, cMap, refMap, scoreMatrix); // set edges (forward pointers / back pointers)
+        std::cout << "Set: " << clock.lap() << "\n";
+
+        clock.lap();
+        fillScoreMatrix(scoreMatrix, alignParams); // traverse table, and fill in the best score and best back pointer
+        std::cout << "Fill: " << clock.lap() << "\n";
+
+        clock.lap();
+        MatchResultPtrVec matches;
+        matchMaker.makeMatches(scoreMatrix, scorer, matches, refMap, cMap, contigIsForward);
+        allMatches.insert(allMatches.end(), matches.begin(), matches.end());
+        std::cout << "Made " << matches.size() << " matches."
+                  << " Elapsed: " << clock.lap() << "\n";
+    }
+
+    
+    std::cout << "-------------------------------------\n"
+              << "Finished making matches. Made  "
+              << allMatches.size() << " matches. "
+              << clock.lap() << " elapsed.\n";
+
+    clock.lap();
+    sort(allMatches.begin(), allMatches.end(), MatchResult::compareScore);
+    reverse(allMatches.begin(), allMatches.end());
+
+    // Set the matches to be returned
+    if (!allMatches.empty())
+    {
+        // The first match is the best match
+        bestMatch = allMatches.front();
+
+        MatchResultPtrVec::iterator E = allMatches.begin()+1;
+        if (pAllMatches)
+        {
+            int offset = min((int) allMatches.size(), opt::maxMatchesPerContig);
+            E = allMatches.begin() + offset;
+            pAllMatches->insert(pAllMatches->end(), allMatches.begin(), E);
+        }
+
+        // Delete all other matches other than those that are returned
+        for(auto iter = E; iter != allMatches.end(); iter++)
+        {
+            delete *iter;
+        }
+    }
+    std::cout << "Sort and delete matches: " << clock.lap() << " seconds.\n";
+
+    return bestMatch;
 }

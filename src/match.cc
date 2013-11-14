@@ -18,6 +18,9 @@
 #include "globals.h"
 #include "utils.h"
 #include "dp.h"
+#include "seededDp.h"
+#include "ScoreMatrixSeeded.h"
+#include "ChunkDatabase.h"
 #include "MatchResult.h"
 #include "match.h"
 #include "xmlWriter.h"
@@ -349,6 +352,7 @@ void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<Optical
     }
     cout << "DONE." << endl;
 }
+
 // Run the match pipeline for a single contig to all of the optical maps
 void matchContigToOpticalMaps(const ContigMapData * pContigMap, const vector<OpticalMapData *>& opticalMapList,
                               vector<MatchResult *> * const pResults, bool localAlignment)
@@ -412,6 +416,72 @@ void matchContigToOpticalMaps(const ContigMapData * pContigMap, const vector<Opt
     // sort MatchResults by score in descending order
     sort(matches.begin(), matches.end(), MatchResult::compareScore);
     reverse(matches.begin(), matches.end());
+
+    // Only take the top opt::maxMatchesPerContig results;
+    MatchResultPtrVec::iterator B = matches.begin();
+    MatchResultPtrVec::iterator E = matches.end();
+    MatchResultPtrVec::iterator E1;
+    if (opt::maxMatchesPerContig > 0 && matches.size() > (size_t) opt::maxMatchesPerContig)
+        E1 = matches.begin() + opt::maxMatchesPerContig;
+    else
+        E1 = matches.end();
+
+    pResults->insert(pResults->end(), B, E1);
+
+    for (MatchResultPtrVec::iterator it = E1; it != E; it++)
+        delete *it;
+    matches.clear();
+}
+
+// Run the match pipeline for a single contig to all of the optical maps
+// using the seeded alignment with the chunkDatabase.
+void matchContigToOpticalMapsSeeded(ContigMapData * pContigMap, const ChunkDatabase& chunkDB, seeded::ScoreMatrix& scoreMatrix, 
+                              vector<MatchResult *> * const pResults)
+{
+    pResults->clear();
+
+    int numContigFrags = pContigMap->getNumFrags();
+    if (numContigFrags <= 2 && !opt::oneToOneMatch) return;
+
+    // Call dynampic programming algorithm to make match
+    vector<MatchResult *> matches; // vector of all match results (including the best match)
+    matches.reserve(1024);
+    MatchResult * pResult = 0;
+    MatchResult * pRevResult = 0;
+
+    // Align to all optical maps
+    double C_sigma = opt::sdMin;
+
+    // Course-grained search for alignment, relaxing the standard devation restriction
+    C_sigma = opt::sdMin;
+    while (C_sigma <= opt::sdMax)
+    {
+        AlignmentParams alignParams(opt::C_r_contig, opt::C_r_optical,
+                                    C_sigma, Constants::SIGMA2, opt::maxChunkMissesQuery,
+                                    opt::maxChunkMissesReference,
+                                    opt::smallFrag, opt::smallFragSlope,
+                                    opt::H, opt::T);
+
+        // Match in the forward direction
+        pResult = seededMatch(pContigMap, chunkDB, scoreMatrix, &matches, alignParams);
+
+        if (!opt::noReverse)
+        {
+            // Match in the reverse direction
+            ContigMapData * pContigMapReverse = pContigMap->getTwin();
+            pRevResult = seededMatch(pContigMapReverse, chunkDB, scoreMatrix, &matches, alignParams);
+        }
+
+        if( pResult || pRevResult)
+            break;
+
+        C_sigma += 1;
+    }
+
+    if (matches.empty()) return;
+
+    // sort MatchResults by score in descending order
+    sort(matches.begin(), matches.end(), resultScoreComp);
 
     // Only take the top opt::maxMatchesPerContig results;
     MatchResultPtrVec::iterator B = matches.begin();

@@ -44,7 +44,7 @@ class MatchResult {
     // Set matched chunks, which defines the alignment.
     void setMatchedChunks(const MatchedChunkVec& chunks);
 
-    // Build additional alignment attributes
+    // Build additional alignment statistics, using the matchedChunks.
     void buildAlignmentAttributes();
     
     // Build descriptive strings of the alignment

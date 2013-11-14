@@ -70,38 +70,38 @@ void ChunkDatabase::sortFrags()
     }
 }
 
-inline int ChunkDatabase::lowerBoundIndex(int q)
+inline int ChunkDatabase::lowerBoundIndex(int q) const
 {
     MapChunkVecConstIter iter = lower_bound(chunks_.begin(), chunks_.end(), q, MapChunkIntCmp);
     int index = iter - chunks_.begin();
     return index;
 }
 
-inline MapChunkVecConstIter ChunkDatabase::lowerBoundIter(int q)
+inline MapChunkVecConstIter ChunkDatabase::lowerBoundIter(int q) const
 {
     return lower_bound(chunks_.begin(), chunks_.end(), q, MapChunkIntCmp);
 }
 
-inline int ChunkDatabase::upperBoundIndex(int q)
+inline int ChunkDatabase::upperBoundIndex(int q) const
 {
     MapChunkVecConstIter iter = upper_bound(chunks_.begin(), chunks_.end(), q, IntMapChunkCmp);
     int index = iter - chunks_.begin();
     return index;
 }
 
-inline int ChunkDatabase::upperBoundIndex(int q, int lowerIndex)
+inline int ChunkDatabase::upperBoundIndex(int q, int lowerIndex) const
 {
     MapChunkVecConstIter iter = upper_bound(chunks_.begin() + lowerIndex, chunks_.end(), q, IntMapChunkCmp);
     int index = iter - chunks_.begin();
     return index;
 }
 
-inline MapChunkVecConstIter ChunkDatabase::upperBoundIter(int q)
+inline MapChunkVecConstIter ChunkDatabase::upperBoundIter(int q) const
 {
     return upper_bound(chunks_.begin(), chunks_.end(), q, IntMapChunkCmp);
 }
 
-inline MapChunkVecConstIter ChunkDatabase::upperBoundIter(int q, MapChunkVecConstIter lower)
+inline MapChunkVecConstIter ChunkDatabase::upperBoundIter(int q, MapChunkVecConstIter lower) const
 {
     MapChunkVecConstIter chunksE = chunks_.end();
     //return upper_bound(chunks_.begin(), chunks_.end(), q, MapChunkIntCmp);
@@ -190,7 +190,7 @@ void filterMapChunksBySize(MapChunkVec&v, int lowerSize, int upperSize)
     v.resize(newSize);
 }
 
-bool ChunkDatabase::getMapChunkHits(IntPairVec& query, MapChunkVec& hits)
+bool ChunkDatabase::getMapChunkHits(IntPairVec& query, MapChunkVec& hits) const
 {
 
     if (query.empty())
@@ -238,7 +238,7 @@ bool ChunkDatabase::getMapChunkHits(IntPairVec& query, MapChunkVec& hits)
     return !hits.empty();
 }
 
-bool ChunkDatabase::getMapChunkHits(int lowerBound, int upperBound, MapChunkVec& hits)
+bool ChunkDatabase::getMapChunkHits(int lowerBound, int upperBound, MapChunkVec& hits) const
 {
     hits.clear();
 
@@ -253,7 +253,7 @@ bool ChunkDatabase::getMapChunkHits(int lowerBound, int upperBound, MapChunkVec&
     return !hits.empty();
 }
 
-MapChunkVecConstIterPair ChunkDatabase::getMapChunkHitCoords(int lowerBound, int upperBound)
+MapChunkVecConstIterPair ChunkDatabase::getMapChunkHitCoords(int lowerBound, int upperBound) const
 {
     MapChunkVecConstIter lower = lowerBoundIter(lowerBound);
     MapChunkVecConstIter upper = upperBoundIter(upperBound);

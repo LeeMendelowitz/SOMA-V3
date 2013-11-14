@@ -21,16 +21,18 @@ namespace seeded {
 class ScoreMatrix
 {
     public:
-    ScoreMatrix(size_t numRows, size_t numCols);
+    ScoreMatrix(size_t numRows = 0, size_t numCols = 0);
     void resize(size_t numRows, size_t numCols);
     size_t getSize() const { return size_; }
-    size_t reset();
     size_t getCapacity() const { return data_.size(); }
-    size_t getNumRows() { return numRows_; }
-    size_t getNumCols() { return numCols_; }
+    size_t getNumRows() const { return numRows_; }
+    size_t getNumCols() const { return numCols_; }
     ScoreCell * getCell(size_t row, size_t col);
     ScoreCell * getCell(const IntPair& coord);
     ScoreCell * getCell(size_t coord);
+    const ScoreCell * getCell(size_t row, size_t col) const;
+    const ScoreCell * getCell(const IntPair& coord) const;
+    const ScoreCell * getCell(size_t coord) const;
     void addScorePathStep(ScorePathStep& step);
     void resetCells();
 
@@ -81,6 +83,7 @@ inline void seeded::ScoreMatrix::resetCells() {
         for(size_t j = 0; j < numCols_; j++)
         {
             ScoreCell * pCell = getCell(i, j);
+            pCell->reset();
             pCell->q_ = i;
             pCell->r_ = j;
             pCell->inPlay_ = false;
@@ -114,6 +117,22 @@ inline ScoreCell * seeded::ScoreMatrix::getCell(const IntPair& coords)
 }
 
 inline ScoreCell * seeded::ScoreMatrix::getCell(size_t n) {
+    // Check that coord within bounds?
+    return &data_[n];
+}
+
+inline const ScoreCell * seeded::ScoreMatrix::getCell(size_t row, size_t col) const {
+    // Check that coords within bounds?
+    return &data_[row*numCols_ + col];
+}
+
+inline const ScoreCell * seeded::ScoreMatrix::getCell(const IntPair& coords) const
+{
+    // Check that coords within bounds?
+    return getCell(coords.first, coords.second);
+}
+
+inline const ScoreCell * seeded::ScoreMatrix::getCell(size_t n) const {
     // Check that coord within bounds?
     return &data_[n];
 }

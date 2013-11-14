@@ -24,15 +24,15 @@ class ChunkDatabase
 
     void addChunks(const MapChunkVec& chunks) { chunks_.insert(chunks_.end(), chunks.begin(), chunks.end()); }
     void sortFrags();
-    int lowerBoundIndex(int q);
-    MapChunkVecConstIter lowerBoundIter(int q);
-    int upperBoundIndex(int q);
-    int upperBoundIndex(int q, int lower);
-    MapChunkVecConstIter upperBoundIter(int q);
-    MapChunkVecConstIter upperBoundIter(int q, MapChunkVecConstIter lower);
-    bool getMapChunkHits(IntPairVec& query, std::vector<MapChunk*>& hits);
-    bool getMapChunkHits(int lowerBound, int upperBound, std::vector<MapChunk*>& hits);
-    MapChunkVecConstIterPair getMapChunkHitCoords(int lowerBound, int upperBound);
+    int lowerBoundIndex(int q) const;
+    MapChunkVecConstIter lowerBoundIter(int q) const;
+    int upperBoundIndex(int q) const;
+    int upperBoundIndex(int q, int lower) const;
+    MapChunkVecConstIter upperBoundIter(int q) const;
+    MapChunkVecConstIter upperBoundIter(int q, MapChunkVecConstIter lower) const;
+    bool getMapChunkHits(IntPairVec& query, std::vector<MapChunk*>& hits) const;
+    bool getMapChunkHits(int lowerBound, int upperBound, std::vector<MapChunk*>& hits) const;
+    MapChunkVecConstIterPair getMapChunkHitCoords(int lowerBound, int upperBound) const;
     MapChunkVecConstIter chunksB() const { return chunks_.begin();}
     MapChunkVecConstIter chunksE() const { return chunks_.end();}
 

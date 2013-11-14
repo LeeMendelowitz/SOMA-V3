@@ -9,6 +9,7 @@
 #include<vector>
 #include<set>
 #include <unordered_map>
+#include <ostream>
 
 #include "ScorePathStep.h"
 
@@ -20,11 +21,11 @@ typedef std::pair<int, int> IntPair;
 class ScoreCell
 {
     public:
-    ScoreCell() : q_(-1), r_(-1), inPlay_(false) { };
+    ScoreCell() : q_(-1), r_(-1), inPlay_(false), backPointer_(nullptr, nullptr) { };
     ScoreCell(int q, int r, bool inPlay = false) :
-        q_(q), r_(r), inPlay_(inPlay) { };
+        q_(q), r_(r), inPlay_(inPlay), backPointer_(nullptr, nullptr) { };
     ScoreCell(IntPair ip, bool inPlay = false) :
-        q_(ip.first), r_(ip.second), inPlay_(inPlay) { };
+        q_(ip.first), r_(ip.second), inPlay_(inPlay), backPointer_(nullptr, nullptr) { };
 
     IntPair key() const { return IntPair(q_, r_);}
     bool operator==(const ScoreCell& other) const { return (key() == other.key()); } 
@@ -34,7 +35,7 @@ class ScoreCell
     bool removeForwardPointer(const ScoreCell* dest);
     void removeBackPointers() { backPointers_.clear(); }
     void removeForwardPointers() { forwardPointers_.clear(); }
-//    void reset();
+    void reset();
 
     int q_;
     int r_;
@@ -59,7 +60,18 @@ namespace std {
 }
 */
 
-typedef std::vector<ScoreCell> ScoreCellVec;
-typedef unordered_map<IntPair, ScoreCell *> ScoreCellMap;
+inline void ScoreCell::reset()
+{
+    q_ = -1;
+    r_ = -1;
+    inPlay_ = false;
+    backPointers_.clear();
+    forwardPointers_.clear();
+    backPointer_ = ScorePathStep(nullptr, nullptr);
+}
+
+typedef std::vector<ScoreCell> ScoreCellVec; typedef unordered_map<IntPair, ScoreCell *> ScoreCellMap;
+
+std::ostream& operator<<(std::ostream&, const ScoreCell& cell);
 
 #endif

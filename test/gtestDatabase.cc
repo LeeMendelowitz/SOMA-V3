@@ -14,6 +14,8 @@ using std::vector;
 #include "seededDp.h"
 #include "AlignmentParams.h"
 #include "globals.h"
+#include "MatchResult.h"
+#include "xmlWriter.h"
 
 // To use a test fixture, derive a class from testing::Test.
 class DatabaseTest : public testing::Test {
@@ -259,15 +261,19 @@ TEST_F(DatabaseTest, GetScorePaths)
     using seeded::ScoreMatrix;
 
     // Populate chunks for each query
-    vector<MapChunkVec> mapChunks(contigMaps_.size());
     AlignmentParams alignParams(3, 5, 5, Constants::SIGMA, 3, 3, 0, 0, 0, 0);
     for (size_t i = 0; i < contigMaps_.size(); i++)
     {
         ContigMapData * cMap = contigMaps_[i];
+
+        // Extract chunks from the query
         setMapChunks(cMap, maxInteriorMisses);
 
+        // Get compatible alignments between query and reference
         RefToScorePathSteps refToScorePaths;  
         getScorePaths(cMap->getChunks(), chunkDB_, tol, minDelta, refToScorePaths);
+
+        // Make a Score Matrix
         seeded::ScoreMatrix scoreMatrix(0,0);
 
         ASSERT_TRUE(refToScorePaths.size() == 1);
@@ -275,15 +281,50 @@ TEST_F(DatabaseTest, GetScorePaths)
         size_t numScorePaths = 0;
         for(RefToScorePathSteps::iterator iter = refToScorePaths.begin(); iter != refToScorePaths.end(); iter++)
         {
-            populateScoreMatrix(iter->second, cMap, iter->first, scoreMatrix);
-            cout << "score matrix has size " << scoreMatrix.getSize() << ", capacity " << scoreMatrix.getCapacity() << endl;
+            setScoreMatrixPathSteps(iter->second, cMap, iter->first, scoreMatrix);
+    //        cout << "score matrix has size " << scoreMatrix.getSize() << ", capacity " << scoreMatrix.getCapacity() << endl;
             numScorePaths += iter->second.size();
-            cout << "doing dp..." << flush;
-            dp(scoreMatrix, alignParams);
-            cout << "done.\n";
-            cout << "number of filled cells: " << scoreMatrix.countFilledCells() << "\n";
+         //   cout << "doing dp..." << flush;
+            fillScoreMatrix(scoreMatrix, alignParams);
+        //    cout << "done.\n";
+            size_t filledCells = scoreMatrix.countFilledCells();
+            double fracFilled = ((float) filledCells)/scoreMatrix.getSize();
+            cout << "number of filled cells: " << scoreMatrix.countFilledCells()
+                 << " fracFilled: " << fracFilled << "\n";
             cout << "Max score: " << scoreMatrix.getMaxScore() << endl;
         }
-        cout << "Got " << numScorePaths << "scorePaths.\n";
     }
+}
+
+TEST_F(DatabaseTest, Align)
+{
+    float tol = 0.10;
+    int minDelta = 1000;
+    size_t maxInteriorMisses = 1;
+
+    using seeded::ScoreMatrix;
+
+    // Populate chunks for each query
+    AlignmentParams alignParams(3, 5, 5, Constants::SIGMA, 3, 3, 0, 0, 0, 0);
+    vector<MatchResult*> allMatches;
+    seeded::ScoreMatrix scoreMatrix(0,0);
+    for (size_t i = 0; i < contigMaps_.size(); i++)
+    {
+        ContigMapData * cMap = contigMaps_[i];
+        vector<MatchResult*> myMatches; 
+        seededMatch(cMap, chunkDB_, scoreMatrix, &myMatches, alignParams);
+        cout << "Got " << myMatches.size() << " matches.\n";
+        allMatches.insert(allMatches.end(), myMatches.begin(), myMatches.end());
+    }
+
+    XMLWriter xmlWriter;
+    xmlWriter.open("test.output.xml");
+    // Write and free the matches
+    for(MatchResult* p : allMatches)
+    {
+        p->annotate();
+        xmlWriter.writeMatchResult(*p);
+        delete p;
+    }
+    xmlWriter.close();
 }

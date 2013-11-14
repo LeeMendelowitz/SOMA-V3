@@ -11,25 +11,25 @@ LIBDIR_RELEASE = ../lib/release
 LIBDIR_DEBUG = ../lib/debug
 LIBDIR_GPROF = ../lib/gprof
 
-all: debug release testDatabase
+all: debug release testDatabase 
 
 debug: CXXFLAGS += -DDEBUG -g -O0
 debug: OBJDIR = $(OBJDIR_DEBUG)
 debug: LIBDIR = $(LIBDIR_DEBUG)
 debug: DIR=debug
-debug: ../bin/debug/match
+debug: ../bin/debug/match ../bin/debug/match_seeded
 
 release: CXXFLAGS += -O3 -DNDEBUG
 release: OBJDIR = $(OBJDIR_RELEASE)
 release: LIBDIR = $(LIBDIR_RELEASE)
 release: DIR=release
-release: ../bin/release/match
+release: ../bin/release/match ../bin/release/match_seeded
 
 gprof: CXXFLAGS += -DDEBUG -pg -O0
 gprof: OBJDIR = $(OBJDIR_DEBUG)
 gprof: LIBDIR = $(LIBDIR_DEBUG)
 gprof: DIR=gprof
-gprof: ../bin/gprof/match
+gprof: ../bin/gprof/match ../bin/gprof/match_seeded
 
 
 testDatabase: ../test/bin/testDatabase
@@ -50,6 +50,7 @@ srcs=match.cc\
 	 OpticalMapData.cc \
 	 pugixml.cc \
 	 scoringFunctions.cc \
+	 GlobalScorer.cc \
      MatchedChunk.cc \
 	 MapReader.cc \
 	 MapData.cc \
@@ -115,10 +116,12 @@ OBJS_GPROF = $(patsubst %.cc,$(OBJDIR_GPROF)/%.o,$(srcs))
 
 
 $(OBJS_DEBUG) : $(OBJDIR_DEBUG)/%.o : %.cc | $(OBJDIR_DEBUG)
+	@echo "*****************************************"	
 	@echo making debug object $@
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(OBJS_RELEASE) : $(OBJDIR_RELEASE)/%.o : %.cc  | $(OBJDIR_RELEASE)
+	@echo "*****************************************"	
 	@echo making release object $@
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
@@ -130,14 +133,17 @@ $(OBJS_GPROF) : $(OBJDIR_GPROF)/%.o : %.cc  | $(OBJDIR_GPROF)
 ####################################################
 # Make archive
 ../lib/release/soma.a: $(OBJS_RELEASE) | $(LIBDIR_RELEASE)
+	@echo "*****************************************"	
 	@echo making release archive
 	ar rvs $@ $(OBJS_RELEASE)
 
 ../lib/gprof/soma.a: $(OBJS_GPROF) | $(LIBDIR_GPROF)
+	@echo "*****************************************"	
 	@echo making gprof archive
 	ar rvs $@ $(OBJS_GPROF)
 
 ../lib/debug/soma.a: $(OBJS_DEBUG) | $(LIBDIR_DEBUG)
+	@echo "*****************************************"	
 	@echo making debug archive
 	ar rvs $@ $(OBJS_DEBUG)
 
@@ -165,17 +171,39 @@ $(OBJS_GPROF) : $(OBJDIR_GPROF)/%.o : %.cc  | $(OBJDIR_GPROF)
 	#$(CXX) $(CXXFLAGS) main.cc ../lib/$@/soma.a  -o ../bin/$@/match
 
 ../bin/release/match: main.cc ../lib/release/soma.a | ../build/release ../lib/release ../bin/release
-	@echo "Building release version of SOMA"
-	$(CXX) $(CXXFLAGS) main.cc ../lib/release/soma.a  -o ../bin/release/match
+	@echo -e "\n\n*****************************************"	
+	@echo -e "Building release version of match\n"
+	$(CXX) $(CXXFLAGS) main.cc ../lib/release/soma.a  -o $@
+
+../bin/release/match_seeded: main_match_seeded.cc ../lib/release/soma.a | ../build/release ../lib/release ../bin/release
+	@echo -e "\n\n*****************************************"	
+	@echo -e "Building release version of match seeded\n"
+	$(CXX) $(CXXFLAGS) main_match_seeded.cc ../lib/release/soma.a  -o $@
 
 ../bin/debug/match: main.cc ../lib/debug/soma.a | ../build/debug ../lib/debug ../bin/debug
-	$(CXX) $(CXXFLAGS) main.cc ../lib/debug/soma.a  -o ../bin/debug/match
+	@echo -e "\n\n*****************************************"	
+	@echo -e "Building debug version of match\n"
+	$(CXX) $(CXXFLAGS) main.cc ../lib/debug/soma.a  -o $@
+
+../bin/debug/match_seeded: main_match_seeded.cc ../lib/debug/soma.a | ../build/debug ../lib/debug ../bin/debug
+	@echo -e "\n\n*****************************************"	
+	@echo -e "Building debug version of match_seeded\n"
+	$(CXX) $(CXXFLAGS) main_match_seeded.cc ../lib/debug/soma.a  -o $@
 
 ../bin/gprof/match: main.cc ../lib/gprof/soma.a | ../build/gprof ../lib/gprof ../bin/gprof
-	$(CXX) $(CXXFLAGS) main.cc ../lib/gprof/soma.a  -o ../bin/gprof/match
+	@echo -e "\n\n*****************************************"	
+	@echo -e "Building gprof version of match\n"
+	$(CXX) $(CXXFLAGS) main.cc ../lib/gprof/soma.a  -o $@
+
+../bin/gprof/match_seeded: main_match_seeded.cc ../lib/gprof/soma.a | ../build/gprof ../lib/gprof ../bin/gprof
+	@echo -e "\n\n*****************************************"	
+	@echo -e "Building gprof version of match_seeded\n"
+	$(CXX) $(CXXFLAGS) $< ../lib/gprof/soma.a  -o $@
 
    
 ../test/bin/testDatabase: ../test/testDatabase.cc ../lib/debug/soma.a | ../test/bin
+	@echo -e "\n\n*****************************************"	
+	@echo -e "Building testDatabase"
 	$(CXX) $(CXXFLAGS) -I../test -I. ../test/testDatabase.cc $(LIBDIR_DEBUG)/soma.a -o $@
 
 #../test/bin/gtestDatabase: ../test/gtest_database.cc ../lib/debug/soma.a | ../test/bin

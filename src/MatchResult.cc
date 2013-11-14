@@ -137,7 +137,8 @@ void MatchResult::buildAlignmentAttributes()
 
 }
 
-// Populate the descriptive strings for the alignment
+// Populate the descriptive strings of the alignment,
+// for output file.
 void MatchResult::annotate()
 {
     bool firstAlignedFrag = true;

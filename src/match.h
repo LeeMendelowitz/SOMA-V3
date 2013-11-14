@@ -16,6 +16,10 @@
 
 using namespace std;
 
+// Forward Declarations
+class ChunkDatabase;
+namespace seeded { class ScoreMatrix; }
+
 void readSilicoFile(const string& silicoFileName, vector<ContigMapData *>& retVec);
 double missedSiteCostFunc(int d);
 double missedFragmentCostFunc(int l);
@@ -40,7 +44,10 @@ bool resultScoreComp(const MatchResult * r1, const MatchResult * r2);
 
 void matchContigToOpticalMaps(const ContigMapData * pContigMap, const vector<OpticalMapData *>& opticalMapList, vector<MatchResult *> * const pResults, bool localAlignment = false);
 
+void matchContigToOpticalMapsSeeded(ContigMapData * pContigMap, const ChunkDatabase& chunkDB, seeded::ScoreMatrix& scoreMatrix, vector<MatchResult *> * const pResults);
+
 void runPermutationTests(MatchResultMap * pMatchResultMap, const vector<OpticalMapData *> opticalMapList, int numTrials);
+
 void runPermutationTests2(MatchResultMap * pMatchResultMap, const vector<OpticalMapData *> opticalMapList, const vector<ContigMapData *>& contigVec, int numTrials);
 
 // TO DO: Move this to another header & cc file

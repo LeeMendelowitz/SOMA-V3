@@ -1,7 +1,10 @@
 #ifndef GLOBAL_SCORER_H
 #define GLOBAL_SCORER_H
 
+#include <cassert>
+
 #include "Scorer.h"
+#include "globals.h"
 
 // In this scoring scheme, the scores are negative (representing penalties).
 // The more positive (less negative) the score is, the better.
@@ -13,23 +16,23 @@ class GlobalScorer
     GlobalScorer(const AlignmentParams& ap) :
         ap_(ap) {}
     ~GlobalScorer() {}
-    inline Score scoreGap(int gapSize);
+    inline Score scoreGap(int gapSize) const ;
     inline Score scoreAlignment(const std::vector<FragData>::const_iterator cB,
                          const std::vector<FragData>::const_iterator cE,
                          const std::vector<FragData>::const_iterator oB,
                          const std::vector<FragData>::const_iterator oE,
-                         bool boundaryFrag);
-    void scoreMatchResult(MatchResult * pResult);
-    Score scoreMatchedChunk(MatchedChunk& chunk);
+                         bool boundaryFrag) const;
+    void scoreMatchResult(MatchResult * pResult) const;
+    Score scoreMatchedChunk(MatchedChunk& chunk) const;
 
     private:
-    double contigMissedSitePenalty(int dToClosestSite);
+    double contigMissedSitePenalty(int dToClosestSite) const;
     AlignmentParams ap_;
 };
 
 // Penalty for "losing" a small contig fragment.
 // (gapped alignment)
-inline Score GlobalScorer::scoreGap(int gapSize)
+inline Score GlobalScorer::scoreGap(int gapSize) const
 {
         double contigScore;
         if (gapSize < ap_.smallFrag)
@@ -40,7 +43,7 @@ inline Score GlobalScorer::scoreGap(int gapSize)
 }
 
 // Penalty for missing a contig restriction site
-inline double GlobalScorer::contigMissedSitePenalty(int dToClosestSite)
+inline double GlobalScorer::contigMissedSitePenalty(int dToClosestSite) const
 {
     if (dToClosestSite > ap_.smallFrag)
     {
@@ -62,7 +65,7 @@ inline Score GlobalScorer::scoreAlignment( const vector<FragData>::const_iterato
                          const vector<FragData>::const_iterator cE,
                          const vector<FragData>::const_iterator oB,
                          const vector<FragData>::const_iterator oE,
-                         bool boundaryFrag)
+                         bool boundaryFrag) const
 {
     vector<FragData>::const_iterator ci, oi;
 
@@ -104,34 +107,6 @@ inline Score GlobalScorer::scoreAlignment( const vector<FragData>::const_iterato
     }
 
     return Score(contigMissScore, opticalMissScore, chi2);
-}
-
-Score GlobalScorer::scoreMatchedChunk(MatchedChunk& chunk)
-{
-    Score score;
-
-    if (chunk.isContigGap())
-    {
-        score = scoreGap(chunk.getContigMatchLengthBp());
-    }
-    else
-    {
-        score = scoreAlignment(chunk.getContigFragB(), chunk.getContigFragE(), chunk.getOpticalFragB(),
-                               chunk.getOpticalFragE(), chunk.isBoundaryChunk());
-    }
-
-    chunk.setScore(score);
-    return score;
-}
-
-// Score the matched chunks in a MatchResult
-void GlobalScorer::scoreMatchResult(MatchResult * pResult)
-{
-    std::vector<MatchedChunk>& chunkList = pResult->matchedChunkList_;
-    std::vector<MatchedChunk>::iterator iter = chunkList.begin();
-    std::vector<MatchedChunk>::iterator E = chunkList.end();
-    for(; iter != E; iter++)
-        scoreMatchedChunk(*iter);
 }
 
 #endif

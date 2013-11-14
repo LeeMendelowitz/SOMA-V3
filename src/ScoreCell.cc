@@ -31,3 +31,14 @@ bool ScoreCell::removeForwardPointer(const ScoreCell *dest)
     */
     return false;
 }
+
+std::ostream& operator<<(std::ostream& os, const ScoreCell& cell)
+{
+    os << "[(" << cell.q_ << "," << cell.r_ << "), " << cell.score_ << ",";
+    const ScoreCell * pTgt = cell.backPointer_.getTarget();
+    if (pTgt)
+        os << " tgt: (" << pTgt->q_ << "," << pTgt->r_ << ") ]";
+    else
+        os << " tgt: nullptr ]";
+    return os;
+}

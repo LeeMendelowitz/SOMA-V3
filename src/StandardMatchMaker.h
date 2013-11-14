@@ -11,10 +11,13 @@ using std::vector;
 #include "MatchedChunk.h"
 #include "debugUtils.h"
 #include "Scorer.h"
+#include "ScoreMatrixSeeded.h"
+#include "seededDp.h"
 
 #define BUILDMATCH_DEBUG 0
 #define FILTER_DEBUG 0
 #define MAKEMATCH_DEBUG 0
+
 
 // The StandardMatchMaker builds global alignments
 // The best non-overlapping matches for the ScoreMatrix are selected.
@@ -36,13 +39,21 @@ class StandardMatchMaker
                      const MapData * pOpticalMap, const MapData * pContigMap, bool contigIsForward);
 
     // Build MatchResults from a seededScoreMatrix.
-    //bool makeMatches(const seeded::ScoreMatrix& scoreMatrix, MatchResultVec& matches,
-     //                bool contigIsForward);
+    template <typename Scorer>
+    bool makeMatches(const seeded::ScoreMatrix& scoreMatrix, const Scorer& scorer, 
+                     MatchResultPtrVec& matches, const MapData * pOpticalMap, 
+                     const MapData * pContigMap,
+                     bool contigIsForward);
 
 
     private:
+    // Build a match result from the scoreMatrix which ends at end_index
     MatchResult * buildMatch(const Index_t& end_index, const ScoreMatrix_t * pScoreMatrix, const MapData * pOpticalMap,
                              const ContigMapData * pContigMap, bool contigIsForward);
+
+    // Build a match result from the scoreMatrix which ends at end_index
+    MatchResult * buildMatch(const Index_t& end_index, const seeded::ScoreMatrix& scoreMatrix, const MapData * pOpticalMap, const ContigMapData * pContigMap, bool contigIsForward);
+
     bool filterFunction(const MatchResult * pMatch);
     void scoreMatch(MatchResult * pMatch); // Fill in the score attributes of the MatchResult
 
@@ -127,6 +138,84 @@ bool StandardMatchMaker::makeMatches(const ScoreMatrix_t * pScoreMatrix, Scorer 
             #endif
 
             pScorer->scoreMatchResult(pMatch);
+            matches.push_back(pMatch);
+            foundMatch = true;
+        }
+    }
+
+    return foundMatch;
+}
+
+template <typename Scorer>
+bool StandardMatchMaker::makeMatches(const seeded::ScoreMatrix& scoreMatrix, const Scorer& scorer, MatchResultPtrVec& matches,
+                                     const MapData * pOpticalMap, const MapData * pContigMap, bool contigIsForward)
+{
+
+    matches.clear();
+
+    const ContigMapData * pContigMapData = dynamic_cast<const ContigMapData*>(pContigMap);
+    assert(pContigMapData->isForward() == contigIsForward);
+
+    const int m = scoreMatrix.getNumRows(); // num rows
+    const int n = scoreMatrix.getNumCols(); // num cols
+    const int lr = m-1; // last row index
+    const int lro = lr*n; // last row offset
+    const ScoreCell * pCell;
+    bool foundMatch = false;
+
+    typedef std::pair<double, Index_t> ScoreIndexPair;
+    typedef std::vector<ScoreIndexPair> ScoreIndexPairVec;
+    ScoreIndexPairVec trailSeeds;
+
+    // Check the last row in the dynamic programming table
+    // for potential matches
+    for(int j=1; j < n; j++)
+    {
+        pCell = scoreMatrix.getCell(lro+j);
+        if (pCell->score_ > -Constants::INF)
+        {
+            assert(pCell->backPointer_.getSource() == pCell);
+            trailSeeds.push_back(ScoreIndexPair(pCell->score_, Index_t(lr,j)));
+        }
+    }
+
+    if (trailSeeds.empty()) return false;
+
+    // Sort the scores in descending order. (The higher the score, the better).
+    sort(trailSeeds.begin(), trailSeeds.end());
+    reverse(trailSeeds.begin(), trailSeeds.end());
+
+    const ScoreIndexPairVec::const_iterator E = trailSeeds.end();
+    for( ScoreIndexPairVec::const_iterator iter = trailSeeds.begin();
+         iter != E;
+         iter++)
+    {
+        if ((maxMatches_ >= 0) && matches.size() == (size_t) maxMatches_) break;
+        Index_t end_index = iter->second;
+
+        #if MAKEMATCH_DEBUG > 0
+        std::cout << "Making match for index: " << end_index <<
+                     " score: " << iter->first << std::endl;
+        #endif
+
+        MatchResult * pMatch = buildMatch(end_index, scoreMatrix, pOpticalMap, pContigMapData, contigIsForward);
+        if (pMatch == NULL) continue;
+
+        // Check that the match is acceptable. A match is OK if:
+        // 1. It passes the filter funtion.
+        // 2. It does not overlap a higher scoring match result.
+        bool matchOK = filterFunction(pMatch);
+        matchOK = matchOK && !hasOverlap(pMatch, matches.begin(), matches.end());
+        if (!matchOK)
+            delete pMatch;
+        else
+        {
+
+            #if MAKEMATCH_DEBUG > 0
+            std::cout << "Accepted Match!" << std::endl; 
+            #endif
+
+            scorer.scoreMatchResult(pMatch);
             matches.push_back(pMatch);
             foundMatch = true;
         }
